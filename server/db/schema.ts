@@ -8,6 +8,7 @@ const timestamp = (name: string) => integer(name, { mode: "timestamp" });
 export const accountTypeValues = ["checking", "savings", "credit", "cash", "investment"] as const;
 export const categoryTypeValues = ["income", "expense"] as const;
 export const messageRoleValues = ["user", "assistant"] as const;
+export const userRoleValues = ["user", "admin"] as const;
 
 // Better Auth core tables.
 export const users = sqliteTable("users", {
@@ -17,6 +18,7 @@ export const users = sqliteTable("users", {
   emailVerified: integer("email_verified", { mode: "boolean" }).notNull().default(false),
   image: text("image"),
   passwordHash: text("password_hash"),
+  role: text("role", { enum: userRoleValues }).notNull().default("user"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
@@ -123,12 +125,24 @@ export const importLogs = sqliteTable("import_logs", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
+export const adminAuditLogs = sqliteTable("admin_audit_logs", {
+  id: id("id"),
+  actorId: text("actor_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  action: text("action").notNull(),
+  targetType: text("target_type").notNull(),
+  targetId: text("target_id"),
+  result: text("result").notNull(),
+  metadata: text("metadata", { mode: "json" }),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
 export const usersRelations = relations(users, ({ many }) => ({
   accounts: many(accounts),
   categories: many(categories),
   transactions: many(transactions),
   chatSessions: many(chatSessions),
   importLogs: many(importLogs),
+  adminAuditLogs: many(adminAuditLogs),
   sessions: many(sessions),
   authAccounts: many(authAccounts),
 }));
@@ -168,4 +182,8 @@ export const chatMessagesRelations = relations(chatMessages, ({ one }) => ({
 
 export const importLogsRelations = relations(importLogs, ({ one }) => ({
   user: one(users, { fields: [importLogs.userId], references: [users.id] }),
+}));
+
+export const adminAuditLogsRelations = relations(adminAuditLogs, ({ one }) => ({
+  actor: one(users, { fields: [adminAuditLogs.actorId], references: [users.id] }),
 }));

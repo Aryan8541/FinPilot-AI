@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { format } from "date-fns";
-import { ArrowUpRight, CreditCard, Plus, TrendingDown, TrendingUp, Wallet } from "lucide-react";
+import { ArrowUpRight, CreditCard, Lightbulb, Plus, TrendingDown, TrendingUp, Wallet } from "lucide-react";
 import { trpc } from "@/lib/trpc-client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,6 +15,7 @@ const currency = (value: number) => `$${value.toLocaleString("en-US", { minimumF
 export default function DashboardPage() {
   const { data: dashboardData, isLoading, isError, refetch } = trpc.analytics.dashboard.useQuery({});
   const { data: trendData } = trpc.analytics.monthlyTrend.useQuery({ months: 6 });
+  const { data: intelligence } = trpc.analytics.intelligence.useQuery({});
   const { data: accounts } = trpc.accounts.list.useQuery();
 
   if (isLoading) {
@@ -44,6 +45,11 @@ export default function DashboardPage() {
       <section className="grid gap-5 xl:grid-cols-[1.35fr_0.65fr]">
         <Card><CardHeader className="flex-row items-center justify-between"><div><CardTitle>Six-month movement</CardTitle><p className="mt-1 text-sm text-muted-foreground">Income, expenses, and net movement over time.</p></div><span className="rounded-full bg-secondary px-3 py-1 text-xs font-medium text-secondary-foreground">Trend</span></CardHeader><CardContent>{trendData?.length ? <TrendLine data={trendData} /> : <div className="flex h-[300px] items-center justify-center text-sm text-muted-foreground">No trend data yet. Add a transaction to begin.</div>}</CardContent></Card>
         <Card><CardHeader><CardTitle>Where spending goes</CardTitle><p className="mt-1 text-sm text-muted-foreground">Expense categories for this month.</p></CardHeader><CardContent>{categoryBreakdown.length ? <SpendingPie data={categoryBreakdown} /> : <div className="flex h-[300px] items-center justify-center text-center text-sm text-muted-foreground">No spending yet.<br />Add a transaction to see the pattern.</div>}</CardContent></Card>
+      </section>
+
+      <section className="grid gap-5 lg:grid-cols-[0.7fr_1.3fr]">
+        <Card><CardHeader><CardTitle>Financial health</CardTitle><p className="mt-1 text-sm text-muted-foreground">A transparent summary of recorded activity.</p></CardHeader><CardContent>{intelligence ? <div className="rounded-2xl bg-muted/40 p-5"><p className={`text-2xl font-semibold ${intelligence.health.status === "Healthy" ? "text-emerald-700 dark:text-emerald-300" : intelligence.health.status === "Needs Attention" ? "text-rose-700 dark:text-rose-300" : "text-foreground"}`}>{intelligence.health.status}</p><p className="mt-2 text-sm leading-6 text-muted-foreground">{intelligence.health.reason}</p></div> : <div className="h-24 animate-pulse rounded-2xl bg-muted" />}</CardContent></Card>
+        <Card><CardHeader><CardTitle className="flex items-center gap-2"><Lightbulb className="h-4 w-4 text-accent" />Worth noticing</CardTitle><p className="mt-1 text-sm text-muted-foreground">Observations calculated from this month and the month before.</p></CardHeader><CardContent>{intelligence ? <div className="grid gap-3 sm:grid-cols-2">{intelligence.insights.map((insight) => <div key={insight.title} className="rounded-2xl border bg-muted/20 p-4"><p className="font-medium">{insight.title}</p><p className="mt-1 text-sm leading-6 text-muted-foreground">{insight.detail}</p></div>)}</div> : <div className="h-24 animate-pulse rounded-2xl bg-muted" />}</CardContent></Card>
       </section>
 
       <section className="grid gap-5 xl:grid-cols-[1.35fr_0.65fr]">

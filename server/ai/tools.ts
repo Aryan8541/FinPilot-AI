@@ -5,6 +5,32 @@ import { eq, and, gte, lte, desc, sql } from "drizzle-orm";
 import { startOfMonth, endOfMonth, format, endOfDay, parseISO } from "date-fns";
 
 export const tools = {
+  getFinancialSummary: {
+    description: "Calculate the user's income, expenses, net cash flow, and transaction count for a date range.",
+    parameters: z.object({
+      startDate: z.string().describe("Start date in YYYY-MM-DD format"),
+      endDate: z.string().describe("End date in YYYY-MM-DD format"),
+    }),
+    execute: async (params: { startDate: string; endDate: string }, userId: string) => {
+      const results = await db.query.transactions.findMany({
+        where: and(
+          eq(transactions.userId, userId),
+          gte(transactions.date, new Date(params.startDate)),
+          lte(transactions.date, endOfDay(parseISO(params.endDate)))
+        ),
+        with: { category: true },
+      });
+      let income = 0;
+      let expenses = 0;
+      for (const transaction of results) {
+        const amount = parseFloat(transaction.amount);
+        if (transaction.category.type === "income") income += amount;
+        else expenses += Math.abs(amount);
+      }
+      return { income, expenses, net: income - expenses, transactionCount: results.length };
+    },
+  },
+
   getTransactions: {
     description:
       "Get a list of transactions for the user. Can filter by date range, account, or category.",
