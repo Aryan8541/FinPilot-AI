@@ -17,9 +17,6 @@ export function parseCSV(csvText: string): CSVParseResult {
     header: true,
     skipEmptyLines: true,
     transformHeader: (header: string) => header.trim(),
-    error: (error: Error) => {
-      errors.push(error.message);
-    },
   });
 
   if (result.errors.length > 0) {

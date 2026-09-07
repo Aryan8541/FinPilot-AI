@@ -1,9 +1,9 @@
 import { z } from "zod";
 import { router, protectedProcedure } from "../trpc";
 import { db } from "@/server/db";
-import { transactions, categories } from "@/server/db/schema";
-import { eq, and, gte, lte, sql, desc } from "drizzle-orm";
-import { startOfMonth, endOfMonth, subMonths, format } from "date-fns";
+import { transactions } from "@/server/db/schema";
+import { eq, and, gte, lte, desc } from "drizzle-orm";
+import { startOfMonth, endOfMonth, subMonths, format, endOfDay, parseISO } from "date-fns";
 
 export const analyticsRouter = router({
   dashboard: protectedProcedure
@@ -46,6 +46,10 @@ export const analyticsRouter = router({
       const categoryBreakdown: { [key: string]: { name: string; amount: number; color: string; type: string } } = {};
       
       monthTransactions.forEach((t) => {
+        if (t.category.type !== "expense") {
+          return;
+        }
+
         if (!categoryBreakdown[t.category.id]) {
           categoryBreakdown[t.category.id] = {
             name: t.category.name,
@@ -91,7 +95,7 @@ export const analyticsRouter = router({
         where: and(
           eq(transactions.userId, ctx.user.id),
           gte(transactions.date, new Date(input.startDate)),
-          lte(transactions.date, new Date(input.endDate))
+          lte(transactions.date, endOfDay(parseISO(input.endDate)))
         ),
         with: {
           category: true,

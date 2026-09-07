@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { ArrowRight, Check } from "lucide-react";
 import { signUp } from "@/lib/auth-client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,108 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default function RegisterPage() {
-  const router = useRouter();
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError("");
-
-    if (password !== confirmPassword) {
-      setError("Passwords do not match");
-      return;
-    }
-
-    if (password.length < 8) {
-      setError("Password must be at least 8 characters");
-      return;
-    }
-
-    setLoading(true);
-
-    try {
-      await signUp.email({
-        name,
-        email,
-        password,
-      });
-      router.push("/dashboard");
-    } catch (err) {
-      setError("Failed to create account. Email may already be in use.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <div className="flex min-h-screen items-center justify-center p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle>Create an Account</CardTitle>
-          <CardDescription>Get started with FinPilot AI</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="name">Name</Label>
-              <Input
-                id="name"
-                type="text"
-                placeholder="John Doe"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="you@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="confirmPassword">Confirm Password</Label>
-              <Input
-                id="confirmPassword"
-                type="password"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                required
-              />
-            </div>
-            {error && <p className="text-sm text-red-500">{error}</p>}
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? "Creating account..." : "Sign Up"}
-            </Button>
-          </form>
-          <p className="mt-4 text-center text-sm text-muted-foreground">
-            Already have an account?{" "}
-            <Link href="/login" className="text-primary hover:underline">
-              Sign in
-            </Link>
-          </p>
-        </CardContent>
-      </Card>
-    </div>
-  );
+  const router = useRouter(); const [name, setName] = useState(""); const [email, setEmail] = useState(""); const [password, setPassword] = useState(""); const [confirmPassword, setConfirmPassword] = useState(""); const [error, setError] = useState(""); const [loading, setLoading] = useState(false);
+  const handleSubmit = async (e: React.FormEvent) => { e.preventDefault(); setError(""); if (password !== confirmPassword) { setError("Passwords do not match."); return; } if (password.length < 8) { setError("Password must be at least 8 characters."); return; } setLoading(true); try { await signUp.email({ name, email, password }); router.push("/dashboard"); } catch { setError("We couldn’t create your account. The email may already be in use."); } finally { setLoading(false); } };
+  return <main className="flex min-h-screen items-center justify-center bg-background p-5 sm:p-10"><Card className="w-full max-w-5xl overflow-hidden border-0 shadow-[0_24px_70px_rgba(23,33,31,0.1)] lg:grid lg:grid-cols-[0.8fr_1.2fr]"><section className="hidden bg-primary p-10 text-primary-foreground lg:block"><div className="flex items-center gap-2.5"><span className="flex h-10 w-10 items-center justify-center rounded-xl bg-accent font-bold text-accent-foreground">FP</span><span className="text-lg font-semibold">FinPilot</span></div><div className="mt-28"><p className="text-sm font-medium uppercase tracking-[0.2em] text-accent">A better money habit</p><h1 className="mt-5 text-4xl font-semibold leading-tight">Start with a clearer picture.</h1><div className="mt-8 space-y-4 text-sm text-primary-foreground/70"><p className="flex gap-3"><Check className="h-4 w-4 shrink-0 text-accent" />Track accounts and transactions in one place.</p><p className="flex gap-3"><Check className="h-4 w-4 shrink-0 text-accent" />Understand spending without the noise.</p><p className="flex gap-3"><Check className="h-4 w-4 shrink-0 text-accent" />Keep your financial data private.</p></div></div></section><section><CardHeader className="px-6 pt-8 sm:px-10 sm:pt-10"><p className="text-sm font-medium uppercase tracking-[0.18em] text-primary">Get started</p><CardTitle className="mt-3 text-3xl tracking-tight">Create your FinPilot</CardTitle><CardDescription>A private workspace for your financial life.</CardDescription></CardHeader><CardContent className="px-6 pb-8 sm:px-10 sm:pb-10"><form onSubmit={handleSubmit} className="space-y-4"><div className="space-y-2"><Label htmlFor="name">Your name</Label><Input id="name" autoComplete="name" placeholder="Alex Morgan" value={name} onChange={(e) => setName(e.target.value)} required /></div><div className="space-y-2"><Label htmlFor="email">Email address</Label><Input id="email" type="email" autoComplete="email" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} required /></div><div className="space-y-2"><Label htmlFor="password">Password</Label><Input id="password" type="password" autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} required /><p className="text-xs text-muted-foreground">Use at least 8 characters.</p></div><div className="space-y-2"><Label htmlFor="confirmPassword">Confirm password</Label><Input id="confirmPassword" type="password" autoComplete="new-password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required /></div>{error && <p role="alert" className="rounded-xl border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive">{error}</p>}<Button type="submit" className="mt-2 h-11 w-full" disabled={loading}>{loading ? "Creating account..." : <>Create account <ArrowRight className="h-4 w-4" /></>}</Button></form><p className="mt-7 text-center text-sm text-muted-foreground">Already have an account? <Link href="/login" className="font-medium text-primary hover:underline">Sign in</Link></p></CardContent></section></Card></main>;
 }

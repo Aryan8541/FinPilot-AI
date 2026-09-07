@@ -1,8 +1,8 @@
 import { z } from "zod";
 import { db } from "@/server/db";
-import { transactions } from "@/server/db/schema";
+import { accounts, transactions } from "@/server/db/schema";
 import { eq, and, gte, lte, desc, sql } from "drizzle-orm";
-import { startOfMonth, endOfMonth, format } from "date-fns";
+import { startOfMonth, endOfMonth, format, endOfDay, parseISO } from "date-fns";
 
 export const tools = {
   getTransactions: {
@@ -15,7 +15,13 @@ export const tools = {
       startDate: z.string().optional().describe("Start date in YYYY-MM-DD format"),
       endDate: z.string().optional().describe("End date in YYYY-MM-DD format"),
     }),
-    execute: async (params: any, userId: string) => {
+    execute: async (params: {
+      limit?: number;
+      accountId?: string;
+      categoryId?: string;
+      startDate?: string;
+      endDate?: string;
+    }, userId: string) => {
       const conditions = [eq(transactions.userId, userId)];
 
       if (params.accountId) {
@@ -28,7 +34,7 @@ export const tools = {
         conditions.push(gte(transactions.date, new Date(params.startDate)));
       }
       if (params.endDate) {
-        conditions.push(lte(transactions.date, new Date(params.endDate)));
+        conditions.push(lte(transactions.date, endOfDay(parseISO(params.endDate))));
       }
 
       const results = await db.query.transactions.findMany({
@@ -60,12 +66,12 @@ export const tools = {
       startDate: z.string().describe("Start date in YYYY-MM-DD format"),
       endDate: z.string().describe("End date in YYYY-MM-DD format"),
     }),
-    execute: async (params: any, userId: string) => {
+    execute: async (params: { startDate: string; endDate: string }, userId: string) => {
       const results = await db.query.transactions.findMany({
         where: and(
           eq(transactions.userId, userId),
           gte(transactions.date, new Date(params.startDate)),
-          lte(transactions.date, new Date(params.endDate))
+          lte(transactions.date, endOfDay(parseISO(params.endDate)))
         ),
         with: {
           category: true,
@@ -98,11 +104,12 @@ export const tools = {
     parameters: z.object({
       months: z.number().min(1).max(12).default(6).describe("Number of months to include"),
     }),
-    execute: async (params: any, userId: string) => {
+    execute: async (params: { months?: number }, userId: string) => {
       const months = [];
       const now = new Date();
+      const monthCount = params.months ?? 6;
 
-      for (let i = params.months - 1; i >= 0; i--) {
+      for (let i = monthCount - 1; i >= 0; i--) {
         const date = new Date(now);
         date.setMonth(now.getMonth() - i);
         months.push({
@@ -155,18 +162,28 @@ export const tools = {
     parameters: z.object({
       accountId: z.string().uuid().optional().describe("Specific account ID (optional)"),
     }),
-    execute: async (params: any, userId: string) => {
-      const accounts = await db.query.accounts.findMany({
+    execute: async (params: { accountId?: string }, userId: string) => {
+      const accountList = await db.query.accounts.findMany({
         where: params.accountId
-          ? and(eq(transactions.userId, userId), eq(transactions.id, params.accountId))
-          : eq(transactions.userId, userId),
+          ? and(eq(accounts.id, params.accountId), eq(accounts.userId, userId))
+          : eq(accounts.userId, userId),
+        with: {
+          transactions: {
+            with: {
+              category: true,
+            },
+          },
+        },
       });
 
-      return accounts.map((a) => ({
+      return accountList.map((a) => ({
         id: a.id,
         name: a.name,
         type: a.type,
-        balance: parseFloat(a.balance),
+        balance: parseFloat(a.balance) + a.transactions.reduce((balance, transaction) => {
+          const amount = parseFloat(transaction.amount);
+          return balance + (transaction.category.type === "income" ? amount : -Math.abs(amount));
+        }, 0),
         currency: a.currency,
       }));
     },
@@ -178,7 +195,7 @@ export const tools = {
       query: z.string().describe("Search query (partial match on description)"),
       limit: z.number().min(1).max(50).default(10).describe("Number of results to return"),
     }),
-    execute: async (params: any, userId: string) => {
+    execute: async (params: { query: string; limit: number }, userId: string) => {
       const results = await db.query.transactions.findMany({
         where: and(
           eq(transactions.userId, userId),
@@ -207,7 +224,7 @@ export const tools = {
     description:
       "Get all transactions marked as recurring. Useful for finding subscriptions and regular bills.",
     parameters: z.object({}),
-    execute: async (_params: any, userId: string) => {
+    execute: async (_params: unknown, userId: string) => {
       const results = await db.query.transactions.findMany({
         where: and(eq(transactions.userId, userId), eq(transactions.isRecurring, true)),
         with: {

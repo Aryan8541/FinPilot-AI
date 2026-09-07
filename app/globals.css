@@ -1,8 +1,23 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #f4f5f2;
+  --foreground: #17211f;
+  --card: #ffffff;
+  --card-foreground: #17211f;
+  --muted: #e9eeea;
+  --muted-foreground: #64716d;
+  --border: #d9e1dc;
+  --input: #d1dbd5;
+  --primary: #0d5c63;
+  --primary-foreground: #f8fbf8;
+  --secondary: #dcebe6;
+  --secondary-foreground: #18453f;
+  --accent: #f0c36a;
+  --accent-foreground: #3d2b09;
+  --destructive: #c84b48;
+  --destructive-foreground: #fff9f8;
+  --ring: #2a8a87;
 }
 
 @theme inline {
@@ -10,17 +25,69 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-ring: var(--ring);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+:root.dark {
+  --background: #101b1a;
+  --foreground: #edf5f0;
+  --card: #172522;
+  --card-foreground: #edf5f0;
+  --muted: #20322e;
+  --muted-foreground: #a8bbb4;
+  --border: #2c4540;
+  --input: #36514b;
+  --primary: #67c8bd;
+  --primary-foreground: #092523;
+  --secondary: #23413a;
+  --secondary-foreground: #d9f0e9;
+  --accent: #e5b85d;
+  --accent-foreground: #30230b;
+  --destructive: #ef8178;
+  --destructive-foreground: #2b0d0b;
+  --ring: #67c8bd;
+}
+
+* {
+  border-color: var(--border);
 }
 
 body {
-  background: var(--background);
+  background:
+    radial-gradient(circle at top right, rgba(240, 195, 106, 0.16), transparent 28rem),
+    var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), sans-serif;
+}
+
+button,
+a,
+input,
+select,
+textarea {
+  -webkit-tap-highlight-color: transparent;
+}
+
+::selection {
+  background: rgba(42, 138, 135, 0.22);
+}
+
+@media (max-width: 640px) {
+  body {
+    background: var(--background);
+  }
 }

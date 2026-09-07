@@ -1,23 +1,22 @@
 import { db } from "../server/db";
-import { users, accounts, categories, transactions } from "../server/db/schema";
-import { hash } from "bcryptjs";
-import { subMonths, addDays, format } from "date-fns";
+import { accounts, categories, transactions } from "../server/db/schema";
+import { auth } from "../server/auth";
+import { subMonths, addDays } from "date-fns";
 
 async function seed() {
   console.log("🌱 Seeding database...");
 
   // Create demo user
-  const passwordHash = await hash("demo123", 10);
-  const [user] = await db
-    .insert(users)
-    .values({
-      email: "demo@FinPilot AI.app",
-      passwordHash,
+  const signup = await auth.api.signUpEmail({
+    body: {
+      email: "demo@finpilot-ai.app",
+      password: "demo1234",
       name: "Demo User",
-    })
-    .returning();
+    },
+  });
+  const user = signup.user;
 
-  console.log("✅ Created demo user: demo@FinPilot AI.app / demo123");
+  console.log("✅ Created demo user: demo@finpilot-ai.app / demo1234");
 
   // Create accounts
   const [checkingAccount] = await db
@@ -31,7 +30,7 @@ async function seed() {
     })
     .returning();
 
-  const [savingsAccount] = await db
+  await db
     .insert(accounts)
     .values({
       userId: user.id,
@@ -83,7 +82,7 @@ async function seed() {
   console.log("✅ Created 12 categories");
 
   // Generate 12 months of transactions
-  const transactionData: any[] = [];
+  const transactionData: (typeof transactions.$inferInsert)[] = [];
   const now = new Date();
 
   // Helper to get random amount
@@ -263,8 +262,8 @@ async function seed() {
   console.log(`✅ Created ${transactionData.length} transactions`);
   console.log("🎉 Seed complete!");
   console.log("\nDemo login:");
-  console.log("  Email: demo@FinPilot AI.app");
-  console.log("  Password: demo123");
+  console.log("  Email: demo@finpilot-ai.app");
+  console.log("  Password: demo1234");
 
   process.exit(0);
 }

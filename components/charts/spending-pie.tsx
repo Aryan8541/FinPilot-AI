@@ -1,6 +1,8 @@
 "use client";
 
-import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from "recharts";
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
+
+const formatCurrency = (value: unknown) => `$${Number(value ?? 0).toFixed(2)}`;
 
 interface SpendingPieProps {
   data: Array<{
@@ -19,23 +21,25 @@ export function SpendingPie({ data }: SpendingPieProps) {
   const colors = data.map((item) => item.color);
 
   return (
-    <ResponsiveContainer width="100%" height={300}>
+    <ResponsiveContainer width="100%" height={300} minWidth={0}>
       <PieChart>
         <Pie
           data={chartData}
           cx="50%"
           cy="50%"
           labelLine={false}
-          label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-          outerRadius={80}
-          fill="#8884d8"
+          label={({ name, percent }) => `${name} ${((percent ?? 0) * 100).toFixed(0)}%`}
+          outerRadius={92}
+          innerRadius={46}
+          paddingAngle={2}
+          fill="#2d9c95"
           dataKey="value"
         >
           {chartData.map((entry, index) => (
             <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />
           ))}
         </Pie>
-        <Tooltip formatter={(value: number) => `$${value.toFixed(2)}`} />
+        <Tooltip formatter={formatCurrency} contentStyle={{ borderRadius: 12, border: "1px solid var(--border)", background: "var(--card)" }} />
       </PieChart>
     </ResponsiveContainer>
   );

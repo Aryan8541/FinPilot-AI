@@ -25,7 +25,7 @@
 ### Prerequisites
 
 - Node.js 18+ and npm
-- PostgreSQL 16+
+- SQLite (created locally at `data/finpilot.db`)
 
 ### Installation
 
@@ -46,7 +46,7 @@
    ```
    
    Edit `.env` and configure:
-   - `DATABASE_URL` — Your PostgreSQL connection string
+   - `DATABASE_URL` — SQLite database path, such as `./data/finpilot.db`
    - `ANTHROPIC_API_KEY` — Your Anthropic API key for AI chat (optional)
 
 4. Push the database schema:
@@ -70,7 +70,7 @@
 
 After running `npm run db:seed`, you can log in with:
 - **Email:** demo@FinPilot AI.app
-- **Password:** demo123
+- **Password:** demo1234
 
 ---
 
@@ -80,7 +80,7 @@ After running `npm run db:seed`, you can log in with:
 - **UI:** Tailwind CSS + shadcn/ui
 - **Charts:** Recharts
 - **Backend:** Next.js API Routes + tRPC
-- **Database:** PostgreSQL + Drizzle ORM
+- **Database:** SQLite + Drizzle ORM
 - **Auth:** Better Auth
 - **AI:** Vercel AI SDK + Anthropic Claude Sonnet
 

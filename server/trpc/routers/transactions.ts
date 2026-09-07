@@ -1,8 +1,34 @@
 import { z } from "zod";
+import { TRPCError } from "@trpc/server";
 import { router, protectedProcedure } from "../trpc";
 import { db } from "@/server/db";
-import { transactions } from "@/server/db/schema";
-import { eq, and, gte, lte, desc, sql, like } from "drizzle-orm";
+import { accounts, categories, transactions } from "@/server/db/schema";
+import { eq, and, gte, lte, desc, like, exists } from "drizzle-orm";
+import { endOfDay, parseISO } from "date-fns";
+
+async function assertOwnedReferences(
+  userId: string,
+  accountId: string,
+  categoryId: string
+) {
+  const [account, category] = await Promise.all([
+    db.query.accounts.findFirst({
+      where: and(eq(accounts.id, accountId), eq(accounts.userId, userId)),
+      columns: { id: true },
+    }),
+    db.query.categories.findFirst({
+      where: and(eq(categories.id, categoryId), eq(categories.userId, userId)),
+      columns: { id: true },
+    }),
+  ]);
+
+  if (!account || !category) {
+    throw new TRPCError({
+      code: "FORBIDDEN",
+      message: "Account or category is not available",
+    });
+  }
+}
 
 export const transactionsRouter = router({
   list: protectedProcedure
@@ -10,6 +36,7 @@ export const transactionsRouter = router({
       z.object({
         accountId: z.string().uuid().optional(),
         categoryId: z.string().uuid().optional(),
+        type: z.enum(["income", "expense"]).optional(),
         startDate: z.string().optional(),
         endDate: z.string().optional(),
         search: z.string().optional(),
@@ -26,11 +53,24 @@ export const transactionsRouter = router({
       if (input.categoryId) {
         conditions.push(eq(transactions.categoryId, input.categoryId));
       }
+      if (input.type) {
+        conditions.push(
+          exists(
+            db.select({ id: categories.id }).from(categories).where(
+              and(
+                eq(categories.id, transactions.categoryId),
+                eq(categories.userId, ctx.user.id),
+                eq(categories.type, input.type)
+              )
+            )
+          )
+        );
+      }
       if (input.startDate) {
         conditions.push(gte(transactions.date, new Date(input.startDate)));
       }
       if (input.endDate) {
-        conditions.push(lte(transactions.date, new Date(input.endDate)));
+        conditions.push(lte(transactions.date, endOfDay(parseISO(input.endDate))));
       }
       if (input.search) {
         conditions.push(like(transactions.description, `%${input.search}%`));
@@ -81,6 +121,8 @@ export const transactionsRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
+      await assertOwnedReferences(ctx.user.id, input.accountId, input.categoryId);
+
       const [transaction] = await db
         .insert(transactions)
         .values({
@@ -110,6 +152,27 @@ export const transactionsRouter = router({
     )
     .mutation(async ({ input, ctx }) => {
       const { id, date, ...updates } = input;
+
+      if (updates.accountId || updates.categoryId) {
+        const existing = await db.query.transactions.findFirst({
+          where: and(
+            eq(transactions.id, id),
+            eq(transactions.userId, ctx.user.id)
+          ),
+          columns: { accountId: true, categoryId: true },
+        });
+
+        if (!existing) {
+          throw new Error("Transaction not found");
+        }
+
+        await assertOwnedReferences(
+          ctx.user.id,
+          updates.accountId ?? existing.accountId,
+          updates.categoryId ?? existing.categoryId
+        );
+      }
+
       const [transaction] = await db
         .update(transactions)
         .set({

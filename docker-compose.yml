@@ -1,45 +1,17 @@
 services:
-  postgres:
-    image: postgres:16-alpine
-    container_name: FinPilot AI-db
-    environment:
-      POSTGRES_USER: FinPilot AI
-      POSTGRES_PASSWORD: FinPilot AI_prod_password
-      POSTGRES_DB: FinPilot AI
-    ports:
-      - "5432:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U FinPilot AI"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-    networks:
-      - FinPilot AI
-
   app:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: FinPilot AI-app
+    container_name: finpilot-ai-app
     ports:
       - "3000:3000"
     environment:
-      DATABASE_URL: postgresql://FinPilot AI:FinPilot AI_prod_password@postgres:5432/FinPilot AI
-      AUTH_SECRET: ${AUTH_SECRET:-change-this-in-production}
-      AUTH_URL: ${AUTH_URL:-http://localhost:3000}
+      DATABASE_URL: ./data/finpilot.db
+      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:-change-this-in-production}
+      BETTER_AUTH_URL: ${BETTER_AUTH_URL:-http://localhost:3000}
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
       NODE_ENV: production
-    depends_on:
-      postgres:
-        condition: service_healthy
-    networks:
-      - FinPilot AI
+    volumes:
+      - ./data:/app/data
     restart: unless-stopped
-
-volumes:
-  postgres_data:
-
-networks:
-  FinPilot AI:

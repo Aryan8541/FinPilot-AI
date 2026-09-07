@@ -1,149 +1,171 @@
-import { pgTable, uuid, varchar, text, timestamp, numeric, boolean, jsonb, pgEnum } from "drizzle-orm/pg-core";
+import { randomUUID } from "node:crypto";
 import { relations } from "drizzle-orm";
+import { integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
 
-// Enums
-export const accountTypeEnum = pgEnum("account_type", ["checking", "savings", "credit", "cash", "investment"]);
-export const categoryTypeEnum = pgEnum("category_type", ["income", "expense"]);
-export const messageRoleEnum = pgEnum("message_role", ["user", "assistant"]);
+const id = (name: string) => text(name).primaryKey().$defaultFn(() => randomUUID());
+const timestamp = (name: string) => integer(name, { mode: "timestamp" });
 
-// Users table
-export const users = pgTable("users", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  email: varchar("email", { length: 255 }).notNull().unique(),
-  passwordHash: text("password_hash").notNull(),
-  name: varchar("name", { length: 255 }),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+export const accountTypeValues = ["checking", "savings", "credit", "cash", "investment"] as const;
+export const categoryTypeValues = ["income", "expense"] as const;
+export const messageRoleValues = ["user", "assistant"] as const;
+
+// Better Auth core tables.
+export const users = sqliteTable("users", {
+  id: id("id"),
+  name: text("name").notNull(),
+  email: text("email").notNull().unique(),
+  emailVerified: integer("email_verified", { mode: "boolean" }).notNull().default(false),
+  image: text("image"),
+  passwordHash: text("password_hash"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
-// Accounts table
-export const accounts = pgTable("accounts", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
-  name: varchar("name", { length: 255 }).notNull(),
-  type: accountTypeEnum("type").notNull(),
-  balance: numeric("balance", { precision: 12, scale: 2 }).notNull().default("0"),
-  currency: varchar("currency", { length: 3 }).notNull().default("USD"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+export const sessions = sqliteTable("session", {
+  id: id("id"),
+  expiresAt: timestamp("expires_at").notNull(),
+  token: text("token").notNull().unique(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  ipAddress: text("ip_address"),
+  userAgent: text("user_agent"),
+  userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
 });
 
-// Categories table
-export const categories = pgTable("categories", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
-  name: varchar("name", { length: 255 }).notNull(),
-  color: varchar("color", { length: 7 }).notNull(), // hex color
-  icon: varchar("icon", { length: 50 }),
-  type: categoryTypeEnum("type").notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+export const authAccounts = sqliteTable("auth_account", {
+  id: id("id"),
+  accountId: text("account_id").notNull(),
+  providerId: text("provider_id").notNull(),
+  userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  accessToken: text("access_token"),
+  refreshToken: text("refresh_token"),
+  idToken: text("id_token"),
+  accessTokenExpiresAt: timestamp("access_token_expires_at"),
+  refreshTokenExpiresAt: timestamp("refresh_token_expires_at"),
+  scope: text("scope"),
+  password: text("password"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
-// Transactions table
-export const transactions = pgTable("transactions", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
-  accountId: uuid("account_id").notNull().references(() => accounts.id, { onDelete: "cascade" }),
-  categoryId: uuid("category_id").notNull().references(() => categories.id, { onDelete: "restrict" }),
-  amount: numeric("amount", { precision: 12, scale: 2 }).notNull(),
+export const verification = sqliteTable("verification", {
+  id: id("id"),
+  identifier: text("identifier").notNull(),
+  value: text("value").notNull(),
+  expiresAt: timestamp("expires_at").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+// Financial application tables.
+export const accounts = sqliteTable("accounts", {
+  id: id("id"),
+  userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  name: text("name").notNull(),
+  type: text("type", { enum: accountTypeValues }).notNull(),
+  // Monetary values remain text to preserve the existing decimal/string semantics.
+  balance: text("balance").notNull().default("0"),
+  currency: text("currency").notNull().default("USD"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const categories = sqliteTable("categories", {
+  id: id("id"),
+  userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  name: text("name").notNull(),
+  color: text("color").notNull(),
+  icon: text("icon"),
+  type: text("type", { enum: categoryTypeValues }).notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const transactions = sqliteTable("transactions", {
+  id: id("id"),
+  userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  accountId: text("account_id").notNull().references(() => accounts.id, { onDelete: "cascade" }),
+  categoryId: text("category_id").notNull().references(() => categories.id, { onDelete: "restrict" }),
+  amount: text("amount").notNull(),
   date: timestamp("date").notNull(),
   description: text("description").notNull(),
-  isRecurring: boolean("is_recurring").notNull().default(false),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  isRecurring: integer("is_recurring", { mode: "boolean" }).notNull().default(false),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
-// Chat Sessions table
-export const chatSessions = pgTable("chat_sessions", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
-  title: varchar("title", { length: 255 }).notNull().default("New Chat"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+export const chatSessions = sqliteTable("chat_sessions", {
+  id: id("id"),
+  userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  title: text("title").notNull().default("New Chat"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
-// Chat Messages table
-export const chatMessages = pgTable("chat_messages", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  sessionId: uuid("session_id").notNull().references(() => chatSessions.id, { onDelete: "cascade" }),
-  role: messageRoleEnum("role").notNull(),
+export const chatMessages = sqliteTable("chat_messages", {
+  id: id("id"),
+  sessionId: text("session_id").notNull().references(() => chatSessions.id, { onDelete: "cascade" }),
+  role: text("role", { enum: messageRoleValues }).notNull(),
   content: text("content").notNull(),
-  toolCalls: jsonb("tool_calls"),
-  chartSpec: jsonb("chart_spec"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
+  toolCalls: text("tool_calls", { mode: "json" }),
+  chartSpec: text("chart_spec", { mode: "json" }),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
-// Import Logs table
-export const importLogs = pgTable("import_logs", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
-  filename: varchar("filename", { length: 255 }).notNull(),
-  rowCount: numeric("row_count").notNull(),
-  successCount: numeric("success_count").notNull(),
-  errorCount: numeric("error_count").notNull(),
-  errors: jsonb("errors"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
+export const importLogs = sqliteTable("import_logs", {
+  id: id("id"),
+  userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  filename: text("filename").notNull(),
+  rowCount: text("row_count").notNull(),
+  successCount: text("success_count").notNull(),
+  errorCount: text("error_count").notNull(),
+  errors: text("errors", { mode: "json" }),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
-// Relations
 export const usersRelations = relations(users, ({ many }) => ({
   accounts: many(accounts),
   categories: many(categories),
   transactions: many(transactions),
   chatSessions: many(chatSessions),
   importLogs: many(importLogs),
+  sessions: many(sessions),
+  authAccounts: many(authAccounts),
+}));
+
+export const sessionsRelations = relations(sessions, ({ one }) => ({
+  user: one(users, { fields: [sessions.userId], references: [users.id] }),
+}));
+
+export const authAccountsRelations = relations(authAccounts, ({ one }) => ({
+  user: one(users, { fields: [authAccounts.userId], references: [users.id] }),
 }));
 
 export const accountsRelations = relations(accounts, ({ one, many }) => ({
-  user: one(users, {
-    fields: [accounts.userId],
-    references: [users.id],
-  }),
+  user: one(users, { fields: [accounts.userId], references: [users.id] }),
   transactions: many(transactions),
 }));
 
 export const categoriesRelations = relations(categories, ({ one, many }) => ({
-  user: one(users, {
-    fields: [categories.userId],
-    references: [users.id],
-  }),
+  user: one(users, { fields: [categories.userId], references: [users.id] }),
   transactions: many(transactions),
 }));
 
 export const transactionsRelations = relations(transactions, ({ one }) => ({
-  user: one(users, {
-    fields: [transactions.userId],
-    references: [users.id],
-  }),
-  account: one(accounts, {
-    fields: [transactions.accountId],
-    references: [accounts.id],
-  }),
-  category: one(categories, {
-    fields: [transactions.categoryId],
-    references: [categories.id],
-  }),
+  user: one(users, { fields: [transactions.userId], references: [users.id] }),
+  account: one(accounts, { fields: [transactions.accountId], references: [accounts.id] }),
+  category: one(categories, { fields: [transactions.categoryId], references: [categories.id] }),
 }));
 
 export const chatSessionsRelations = relations(chatSessions, ({ one, many }) => ({
-  user: one(users, {
-    fields: [chatSessions.userId],
-    references: [users.id],
-  }),
+  user: one(users, { fields: [chatSessions.userId], references: [users.id] }),
   messages: many(chatMessages),
 }));
 
 export const chatMessagesRelations = relations(chatMessages, ({ one }) => ({
-  session: one(chatSessions, {
-    fields: [chatMessages.sessionId],
-    references: [chatSessions.id],
-  }),
+  session: one(chatSessions, { fields: [chatMessages.sessionId], references: [chatSessions.id] }),
 }));
 
 export const importLogsRelations = relations(importLogs, ({ one }) => ({
-  user: one(users, {
-    fields: [importLogs.userId],
-    references: [users.id],
-  }),
+  user: one(users, { fields: [importLogs.userId], references: [users.id] }),
 }));

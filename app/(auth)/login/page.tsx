@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { ArrowRight, ShieldCheck } from "lucide-react";
 import { signIn } from "@/lib/auth-client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,73 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default function LoginPage() {
-  const router = useRouter();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError("");
-    setLoading(true);
-
-    try {
-      await signIn.email({
-        email,
-        password,
-      });
-      router.push("/dashboard");
-    } catch (err) {
-      setError("Invalid email or password");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <div className="flex min-h-screen items-center justify-center p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle>Welcome to FinPilot AI</CardTitle>
-          <CardDescription>Sign in to your account to continue</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="you@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-              />
-            </div>
-            {error && <p className="text-sm text-red-500">{error}</p>}
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? "Signing in..." : "Sign In"}
-            </Button>
-          </form>
-          <p className="mt-4 text-center text-sm text-muted-foreground">
-            Don't have an account?{" "}
-            <Link href="/register" className="text-primary hover:underline">
-              Sign up
-            </Link>
-          </p>
-        </CardContent>
-      </Card>
-    </div>
-  );
+  const router = useRouter(); const [email, setEmail] = useState(""); const [password, setPassword] = useState(""); const [error, setError] = useState(""); const [loading, setLoading] = useState(false);
+  const handleSubmit = async (e: React.FormEvent) => { e.preventDefault(); setError(""); setLoading(true); try { await signIn.email({ email, password }); router.push("/dashboard"); } catch { setError("We couldn’t sign you in. Check your email and password."); } finally { setLoading(false); } };
+  return <main className="grid min-h-screen bg-background lg:grid-cols-[1fr_0.8fr]"><section className="hidden flex-col justify-between bg-primary p-10 text-primary-foreground lg:flex"><div><div className="flex items-center gap-2.5"><span className="flex h-10 w-10 items-center justify-center rounded-xl bg-accent font-bold text-accent-foreground">FP</span><span className="text-lg font-semibold">FinPilot</span></div><div className="mt-32 max-w-md"><p className="text-sm font-medium uppercase tracking-[0.2em] text-accent">Your private ledger</p><h1 className="mt-5 text-5xl font-semibold leading-[1.05] tracking-tight">Make the numbers feel clear.</h1><p className="mt-6 text-lg leading-8 text-primary-foreground/70">A focused place to understand what comes in, what goes out, and what matters next.</p></div></div><div className="flex items-center gap-2 text-sm text-primary-foreground/60"><ShieldCheck className="h-4 w-4 text-accent" />Your financial data stays yours.</div></section><section className="flex items-center justify-center p-5 sm:p-10"><Card className="w-full max-w-md border-0 bg-transparent shadow-none"><CardHeader className="px-0"><div className="mb-5 flex h-10 w-10 items-center justify-center rounded-xl bg-primary font-bold text-primary-foreground lg:hidden">FP</div><p className="text-sm font-medium uppercase tracking-[0.18em] text-primary">Welcome back</p><CardTitle className="mt-3 text-3xl tracking-tight">Sign in to FinPilot</CardTitle><CardDescription>Pick up where you left off.</CardDescription></CardHeader><CardContent className="px-0"><form onSubmit={handleSubmit} className="space-y-5"><div className="space-y-2"><Label htmlFor="email">Email address</Label><Input id="email" type="email" autoComplete="email" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} required /></div><div className="space-y-2"><div className="flex items-center justify-between"><Label htmlFor="password">Password</Label><span className="text-xs text-muted-foreground">Secure sign-in</span></div><Input id="password" type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} required /></div>{error && <p role="alert" className="rounded-xl border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive">{error}</p>}<Button type="submit" className="h-11 w-full" disabled={loading}>{loading ? "Signing in..." : <>Sign in <ArrowRight className="h-4 w-4" /></>}</Button></form><p className="mt-7 text-center text-sm text-muted-foreground">New to FinPilot? <Link href="/register" className="font-medium text-primary hover:underline">Create an account</Link></p></CardContent></Card></section></main>;
 }

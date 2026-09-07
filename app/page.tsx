@@ -1,93 +1,14 @@
 import Link from "next/link";
+import { ArrowRight, BarChart3, LockKeyhole, MessageCircle, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-export default function HomePage() {
-  return (
-    <div className="flex min-h-screen flex-col">
-      <header className="border-b">
-        <div className="container mx-auto flex h-16 items-center justify-between px-4">
-          <h1 className="text-2xl font-bold">FinPilot AI</h1>
-          <div className="flex gap-4">
-            <Link href="/login">
-              <Button variant="ghost">Sign In</Button>
-            </Link>
-            <Link href="/register">
-              <Button>Get Started</Button>
-            </Link>
-          </div>
-        </div>
-      </header>
-      <main className="flex-1">
-        <section className="container mx-auto px-4 py-20 text-center">
-          <h2 className="text-5xl font-bold tracking-tight">
-            Take Control of Your Finances
-          </h2>
-          <p className="mt-6 text-xl text-muted-foreground">
-            Self-hostable, open-source personal finance tracker with AI-powered insights.
-            <br />
-            Your data, your rules, your privacy.
-          </p>
-          <div className="mt-10 flex justify-center gap-4">
-            <Link href="/register">
-              <Button size="lg">Start Free</Button>
-            </Link>
-            <Link href="#features">
-              <Button size="lg" variant="outline">
-                Learn More
-              </Button>
-            </Link>
-          </div>
-        </section>
+const features = [
+  { icon: BarChart3, title: "See the whole picture", text: "Understand cash flow, spending patterns, and recent activity in one focused workspace." },
+  { icon: LockKeyhole, title: "Keep data close", text: "Self-host your financial records with an experience designed around privacy and ownership." },
+  { icon: MessageCircle, title: "Ask better questions", text: "Use the financial assistant to explore your data in plain language." },
+  { icon: Upload, title: "Bring your history", text: "Import transaction data from a CSV and keep your ledger moving forward." },
+];
 
-        <section id="features" className="border-t bg-muted/50 py-20">
-          <div className="container mx-auto px-4">
-            <h3 className="text-center text-3xl font-bold">Features</h3>
-            <div className="mt-12 grid gap-8 md:grid-cols-3">
-              <div className="rounded-lg border bg-background p-6">
-                <h4 className="text-xl font-semibold">🔒 Privacy First</h4>
-                <p className="mt-2 text-muted-foreground">
-                  Self-host your data. No third-party tracking or cloud lock-in.
-                </p>
-              </div>
-              <div className="rounded-lg border bg-background p-6">
-                <h4 className="text-xl font-semibold">📊 Beautiful Dashboard</h4>
-                <p className="mt-2 text-muted-foreground">
-                  Track spending with charts, category breakdowns, and trends.
-                </p>
-              </div>
-              <div className="rounded-lg border bg-background p-6">
-                <h4 className="text-xl font-semibold">🤖 AI Chat</h4>
-                <p className="mt-2 text-muted-foreground">
-                  Ask questions in natural language. Get instant answers and charts.
-                </p>
-              </div>
-              <div className="rounded-lg border bg-background p-6">
-                <h4 className="text-xl font-semibold">📥 CSV Import</h4>
-                <p className="mt-2 text-muted-foreground">
-                  Import transactions from your bank with flexible column mapping.
-                </p>
-              </div>
-              <div className="rounded-lg border bg-background p-6">
-                <h4 className="text-xl font-semibold">🏷️ Smart Categories</h4>
-                <p className="mt-2 text-muted-foreground">
-                  Organize spending with custom categories and recurring detection.
-                </p>
-              </div>
-              <div className="rounded-lg border bg-background p-6">
-                <h4 className="text-xl font-semibold">⚡ Fast & Modern</h4>
-                <p className="mt-2 text-muted-foreground">
-                  Built with Next.js 15, React 19, and TypeScript for blazing speed.
-                </p>
-              </div>
-            </div>
-          </div>
-        </section>
-      </main>
-      <footer className="border-t py-6">
-        <div className="container mx-auto px-4 text-center text-sm text-muted-foreground">
-          <p>FinPilot AI © 2026. Open source under MIT License.</p>
-        </div>
-      </footer>
-    </div>
-  );
+export default function HomePage() {
+  return <div className="min-h-screen overflow-hidden bg-background"><header className="border-b bg-card/70"><div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-5 sm:px-8"><Link href="/" className="flex items-center gap-2.5"><span className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-sm font-bold text-primary-foreground">FP</span><span className="font-semibold tracking-tight">FinPilot</span></Link><nav className="flex items-center gap-2"><Button variant="ghost" asChild><Link href="/login">Sign in</Link></Button><Button asChild><Link href="/register">Get started <ArrowRight className="h-4 w-4" /></Link></Button></nav></div></header><main><section className="relative mx-auto grid max-w-7xl gap-12 px-5 pb-20 pt-20 sm:px-8 lg:grid-cols-[1.05fr_0.95fr] lg:items-center lg:pb-28 lg:pt-28"><div className="relative z-10"><p className="text-sm font-medium uppercase tracking-[0.22em] text-primary">Personal finance, made legible</p><h1 className="mt-6 max-w-3xl text-5xl font-semibold leading-[0.98] tracking-tight text-foreground sm:text-6xl lg:text-7xl">A calmer way to understand your money.</h1><p className="mt-7 max-w-xl text-lg leading-8 text-muted-foreground">FinPilot brings accounts, transactions, trends, and thoughtful answers into one private financial workspace.</p><div className="mt-9 flex flex-wrap gap-3"><Button size="lg" asChild><Link href="/register">Create your workspace <ArrowRight className="h-4 w-4" /></Link></Button><Button size="lg" variant="outline" asChild><Link href="#features">Explore the workflow</Link></Button></div></div><div className="relative min-h-[360px] overflow-hidden rounded-[2rem] border bg-primary p-6 text-primary-foreground shadow-[0_24px_70px_rgba(13,92,99,0.2)] sm:p-8"><div className="absolute -right-16 -top-16 h-48 w-48 rounded-full border-[24px] border-accent/60" /><div className="relative flex h-full flex-col justify-between"><div className="flex items-center justify-between"><span className="text-sm font-medium text-primary-foreground/70">Your financial overview</span><span className="rounded-full bg-primary-foreground/10 px-3 py-1 text-xs text-primary-foreground/70">Private workspace</span></div><div><p className="text-sm text-primary-foreground/60">A clearer next step</p><p className="mt-2 max-w-sm text-3xl font-semibold leading-tight">Know what changed. Decide what matters.</p></div><div className="grid grid-cols-2 gap-3"><div className="rounded-2xl border border-primary-foreground/15 bg-primary-foreground/10 p-4"><p className="text-xs text-primary-foreground/60">Transactions</p><p className="mt-2 text-lg font-semibold">Organized</p></div><div className="rounded-2xl border border-primary-foreground/15 bg-primary-foreground/10 p-4"><p className="text-xs text-primary-foreground/60">Insights</p><p className="mt-2 text-lg font-semibold">At hand</p></div></div></div></div></section><section id="features" className="border-y bg-muted/30"><div className="mx-auto max-w-7xl px-5 py-16 sm:px-8"><div className="max-w-xl"><p className="text-sm font-medium uppercase tracking-[0.2em] text-primary">Built for clarity</p><h2 className="mt-3 text-3xl font-semibold tracking-tight">The useful parts, without the noise.</h2></div><div className="mt-10 grid gap-px overflow-hidden rounded-2xl border bg-border sm:grid-cols-2 lg:grid-cols-4">{features.map(({ icon: Icon, title, text }) => <article key={title} className="bg-card p-6"><div className="flex h-10 w-10 items-center justify-center rounded-xl bg-secondary text-secondary-foreground"><Icon className="h-5 w-5" /></div><h3 className="mt-6 font-semibold">{title}</h3><p className="mt-2 text-sm leading-6 text-muted-foreground">{text}</p></article>)}</div></div></section></main><footer className="mx-auto flex max-w-7xl flex-col gap-2 px-5 py-8 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between sm:px-8"><span>FinPilot · Open source personal finance</span><span>Your data, your rules.</span></footer></div>;
 }

@@ -7,15 +7,30 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Upload, FileText, CheckCircle, XCircle } from "lucide-react";
+import { ArrowRight, CheckCircle, FileUp, XCircle } from "lucide-react";
+import { toast } from "sonner";
 
 type ImportStep = "upload" | "mapping" | "complete";
 
+interface PreviewData {
+  headers: string[];
+  sampleRows: Record<string, string>[];
+  totalRows: number;
+  errors: string[];
+}
+
+interface ImportResult {
+  imported: number;
+  failed: number;
+  errors: string[];
+}
+
 export default function ImportPage() {
+  const utils = trpc.useUtils();
   const [step, setStep] = useState<ImportStep>("upload");
   const [csvText, setCsvText] = useState("");
   const [filename, setFilename] = useState("");
-  const [previewData, setPreviewData] = useState<any>(null);
+  const [previewData, setPreviewData] = useState<PreviewData | null>(null);
   const [mapping, setMapping] = useState({
     amount: "",
     date: "",
@@ -23,23 +38,29 @@ export default function ImportPage() {
     accountId: "",
     categoryId: "",
   });
-  const [importResult, setImportResult] = useState<any>(null);
+  const [importResult, setImportResult] = useState<ImportResult | null>(null);
 
   const { data: accounts } = trpc.accounts.list.useQuery();
   const { data: categories } = trpc.categories.list.useQuery();
+  const { data: importLogs, isLoading: logsLoading, isError: logsError, refetch: refetchLogs } = trpc.import.logs.useQuery();
 
   const previewMutation = trpc.import.preview.useMutation({
     onSuccess: (data) => {
       setPreviewData(data);
       setStep("mapping");
     },
+    onError: () => toast.error("Unable to read this CSV file"),
   });
 
   const commitMutation = trpc.import.commit.useMutation({
     onSuccess: (data) => {
       setImportResult(data);
       setStep("complete");
+      void utils.import.logs.invalidate();
+      void utils.transactions.list.invalidate();
+      toast.success("Import completed");
     },
+    onError: () => toast.error("Unable to import this file"),
   });
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -72,11 +93,11 @@ export default function ImportPage() {
     mapping.categoryId;
 
   return (
-    <div>
-      <h1 className="text-3xl font-bold">Import Transactions</h1>
-      <p className="mt-2 text-muted-foreground">
+    <div className="space-y-5">
+      <header><p className="text-sm font-medium uppercase tracking-[0.18em] text-primary">Data intake</p><h1 className="mt-2 text-3xl font-semibold tracking-tight">Import transactions</h1><p className="mt-1 text-muted-foreground">
         Upload a CSV file from your bank or financial institution
-      </p>
+      </p></header>
+      <div className="grid gap-2 sm:grid-cols-3"><div className={`rounded-xl border px-3 py-2 text-sm ${step === "upload" ? "border-primary bg-primary/5 font-medium text-primary" : "text-muted-foreground"}`}><span className="mr-2">01</span>Upload file</div><div className={`rounded-xl border px-3 py-2 text-sm ${step === "mapping" ? "border-primary bg-primary/5 font-medium text-primary" : "text-muted-foreground"}`}><span className="mr-2">02</span>Map columns</div><div className={`rounded-xl border px-3 py-2 text-sm ${step === "complete" ? "border-primary bg-primary/5 font-medium text-primary" : "text-muted-foreground"}`}><span className="mr-2">03</span>Review result</div></div>
 
       {/* Step 1: Upload */}
       {step === "upload" && (
@@ -85,8 +106,8 @@ export default function ImportPage() {
             <CardTitle>Step 1: Upload CSV File</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="flex flex-col items-center justify-center border-2 border-dashed rounded-lg p-12">
-              <Upload className="h-12 w-12 text-muted-foreground mb-4" />
+            <div className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed bg-muted/30 p-8 text-center sm:p-12">
+              <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-secondary text-secondary-foreground"><FileUp className="h-6 w-6" /></div>
               <Label
                 htmlFor="csv-upload"
                 className="cursor-pointer text-primary hover:underline"
@@ -101,12 +122,13 @@ export default function ImportPage() {
                 onChange={handleFileUpload}
               />
               <p className="mt-2 text-sm text-muted-foreground">
-                Supported format: CSV files only
+                CSV only · include amount, date, and description columns
               </p>
             </div>
             {previewMutation.isPending && (
               <p className="mt-4 text-center text-sm">Processing file...</p>
             )}
+            {previewMutation.isError && <p className="mt-4 text-center text-sm text-destructive">Unable to process this file. Please choose a valid CSV.</p>}
           </CardContent>
         </Card>
       )}
@@ -235,7 +257,7 @@ export default function ImportPage() {
                 >
                   {commitMutation.isPending
                     ? "Importing..."
-                    : `Import ${previewData.totalRows} Transactions`}
+                    : <>Import {previewData.totalRows} transactions <ArrowRight className="h-4 w-4" /></>}
                 </Button>
                 <Button
                   variant="outline"
@@ -269,7 +291,7 @@ export default function ImportPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {previewData.sampleRows.map((row: any, idx: number) => (
+                    {previewData.sampleRows.map((row, idx) => (
                       <tr key={idx} className="border-b">
                         {previewData.headers.map((header: string) => (
                           <td key={header} className="p-2">
@@ -351,6 +373,16 @@ export default function ImportPage() {
           </CardContent>
         </Card>
       )}
+
+      <Card className="mt-6">
+        <CardHeader><CardTitle>Import History</CardTitle></CardHeader>
+        <CardContent>
+          {logsLoading && <p className="text-sm text-muted-foreground">Loading import history...</p>}
+          {logsError && <div><p className="text-sm text-destructive">Unable to load import history.</p><Button variant="outline" className="mt-2" onClick={() => refetchLogs()}>Retry</Button></div>}
+          {!logsLoading && !logsError && importLogs?.length === 0 && <div><p className="font-medium">No imports yet</p><p className="text-sm text-muted-foreground">Import a CSV file to see your import history here.</p></div>}
+          {!logsLoading && !logsError && importLogs && importLogs.length > 0 && <div className="overflow-x-auto"><table className="w-full min-w-[560px] text-sm"><thead><tr className="border-b text-left"><th className="p-2">Date</th><th className="p-2">File</th><th className="p-2">Rows</th><th className="p-2">Imported</th><th className="p-2">Failed</th></tr></thead><tbody>{importLogs.map((log) => <tr key={log.id} className="border-b last:border-0"><td className="p-2">{new Date(log.createdAt).toLocaleString()}</td><td className="p-2">{log.filename}</td><td className="p-2">{log.rowCount}</td><td className="p-2 text-green-600">{log.successCount}</td><td className="p-2 text-red-600">{log.errorCount}</td></tr>)}</tbody></table></div>}
+        </CardContent>
+      </Card>
     </div>
   );
 }

@@ -1,8 +1,10 @@
 import { z } from "zod";
+import { TRPCError } from "@trpc/server";
 import { router, protectedProcedure } from "../trpc";
 import { db } from "@/server/db";
-import { transactions, importLogs } from "@/server/db/schema";
-import { parseCSV, mapRow, type FieldMapping } from "@/lib/csv-parser";
+import { accounts, categories, transactions, importLogs } from "@/server/db/schema";
+import { parseCSV, mapRow } from "@/lib/csv-parser";
+import { and, eq } from "drizzle-orm";
 
 export const importRouter = router({
   preview: protectedProcedure
@@ -36,6 +38,30 @@ export const importRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
+      const [account, category] = await Promise.all([
+        db.query.accounts.findFirst({
+          where: and(
+            eq(accounts.id, input.mapping.accountId),
+            eq(accounts.userId, ctx.user.id)
+          ),
+          columns: { id: true },
+        }),
+        db.query.categories.findFirst({
+          where: and(
+            eq(categories.id, input.mapping.categoryId),
+            eq(categories.userId, ctx.user.id)
+          ),
+          columns: { id: true },
+        }),
+      ]);
+
+      if (!account || !category) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Account or category is not available",
+        });
+      }
+
       const result = parseCSV(input.csvText);
       const errors: string[] = [];
       let successCount = 0;
@@ -62,8 +88,8 @@ export const importRouter = router({
             isRecurring: false,
           });
           successCount++;
-        } catch (err: any) {
-          errors.push(`Row ${i + 1}: ${err.message}`);
+        } catch {
+          errors.push(`Row ${i + 1}: Failed to import transaction`);
         }
       }
 

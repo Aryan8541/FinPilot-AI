@@ -4,12 +4,35 @@ import { db } from "@/server/db";
 import { accounts } from "@/server/db/schema";
 import { eq, and } from "drizzle-orm";
 
+function currentBalance(account: {
+  balance: string;
+  transactions: { amount: string; category: { type: "income" | "expense" } }[];
+}) {
+  return account.transactions.reduce((balance, transaction) => {
+    const amount = parseFloat(transaction.amount);
+    return balance + (transaction.category.type === "income" ? amount : -Math.abs(amount));
+  }, parseFloat(account.balance));
+}
+
 export const accountsRouter = router({
   list: protectedProcedure.query(async ({ ctx }) => {
-    return await db.query.accounts.findMany({
+    const accountList = await db.query.accounts.findMany({
       where: eq(accounts.userId, ctx.user.id),
+      with: {
+        transactions: {
+          with: {
+            category: true,
+          },
+        },
+      },
       orderBy: (accounts, { desc }) => [desc(accounts.createdAt)],
     });
+
+    return accountList.map((account) => ({
+      ...account,
+      balance: currentBalance(account).toFixed(2),
+      transactions: undefined,
+    }));
   }),
 
   get: protectedProcedure
@@ -20,11 +43,22 @@ export const accountsRouter = router({
           eq(accounts.id, input.id),
           eq(accounts.userId, ctx.user.id)
         ),
+        with: {
+          transactions: {
+            with: {
+              category: true,
+            },
+          },
+        },
       });
       if (!account) {
         throw new Error("Account not found");
       }
-      return account;
+      return {
+        ...account,
+        balance: currentBalance(account).toFixed(2),
+        transactions: undefined,
+      };
     }),
 
   create: protectedProcedure

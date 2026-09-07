@@ -1,5 +1,5 @@
 import { anthropic } from "@ai-sdk/anthropic";
-import { streamText, tool } from "ai";
+import { convertToModelMessages, stepCountIs, streamText, tool, type ToolSet, type UIMessage } from "ai";
 import { auth } from "@/server/auth";
 import { tools } from "@/server/ai/tools";
 import { systemPrompt } from "@/server/ai/system-prompt";
@@ -16,17 +16,21 @@ export async function POST(req: Request) {
     return new Response("Unauthorized", { status: 401 });
   }
 
-  const { messages } = await req.json();
+  const { messages } = (await req.json()) as { messages: UIMessage[] };
 
   // Convert tools to AI SDK format
-  const aiTools: any = {};
+  const aiTools: ToolSet = {};
   
   for (const [name, toolDef] of Object.entries(tools)) {
     aiTools[name] = tool({
       description: toolDef.description,
-      parameters: toolDef.parameters,
-      execute: async (params) => {
-        return await toolDef.execute(params, session.user.id);
+      inputSchema: toolDef.parameters,
+      execute: async (params: unknown) => {
+        const execute = toolDef.execute as (
+          input: unknown,
+          userId: string
+        ) => Promise<unknown>;
+        return await execute(params, session.user.id);
       },
     });
   }
@@ -34,10 +38,10 @@ export async function POST(req: Request) {
   const result = streamText({
     model: anthropic("claude-3-5-sonnet-20241022"),
     system: systemPrompt,
-    messages,
+    messages: await convertToModelMessages(messages),
     tools: aiTools,
-    maxSteps: 5,
+    stopWhen: stepCountIs(5),
   });
 
-  return result.toDataStreamResponse();
+  return result.toUIMessageStreamResponse();
 }
