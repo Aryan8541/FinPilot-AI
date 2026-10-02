@@ -1,199 +1,178 @@
 # FinPilot AI
 
-**Self-hostable, open-source personal finance tracker with AI-powered insights.**
-
-![FinPilot AI Banner](./docs/banner.png)
+Self-hosted personal finance tracking with AI-powered analysis and a local SQLite/libSQL data model.
 
 ---
 
-## 🌟 Features
+## Features
 
-- **📊 Beautiful Dashboard** — Track spending with charts, category breakdowns, and monthly trends
-- **💳 Transaction Management** — Add, edit, and organize all your income and expenses
-- **📁 Multi-Account Support** — Manage checking, savings, credit cards, and more
-- **🏷️ Smart Categories** — Organize transactions with customizable categories and colors
-- **📥 CSV Import** — Bulk-import transactions from your bank with flexible column mapping
-- **🤖 AI Chat Assistant** — Ask questions in natural language and get instant financial insights
-- **🔒 Privacy First** — Self-host your data, no third-party tracking or cloud lock-in
-- **🌙 Dark Mode** — Beautiful interface in light and dark themes
-- **📱 Responsive** — Works perfectly on desktop, tablet, and mobile
+- Dashboard analytics for spending, categories, and trends
+- Transaction management with account and category ownership checks
+- CSV import workflow with row and size limits
+- AI chat powered by Anthropic using authenticated user-scoped tools
+- Better Auth email/password authentication with admin role enforcement
+- Admin overview, users, analytics, imports, audit log, and health surfaces
 
 ---
 
-## 🚀 Quick Start
+## Current architecture
+
+- Next.js 16.2.6
+- React 19.2.4
+- TypeScript 5
+- Better Auth 1.6.11
+- SQLite/libSQL locally and PostgreSQL in production via Drizzle ORM
+- tRPC API with protected and admin procedures
+- Anthropic via the Vercel AI SDK
+
+Local database default:
+- `DATABASE_URL=./data/finpilot.db`
+- file-backed SQLite under the `data/` directory
+
+Production guidance:
+- Local development uses `./data/finpilot.db`.
+- Render production uses PostgreSQL through the `DATABASE_URL` environment variable.
+- The selected Drizzle dialect, schema, and Better Auth adapter follow the `DATABASE_URL` protocol.
+
+---
+
+## Quick start
 
 ### Prerequisites
 
-- Node.js 18+ and npm
-- SQLite (created locally at `data/finpilot.db`)
+- Node.js 20+
+- npm
 
-### Installation
-
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/yourusername/FinPilot AI.git
-   cd FinPilot AI
-   ```
-
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
-
-3. Set up environment variables:
-   ```bash
-   cp .env.example .env
-   ```
-   
-   Edit `.env` and configure:
-   - `DATABASE_URL` — SQLite database path, such as `./data/finpilot.db`
-   - `ANTHROPIC_API_KEY` — Your Anthropic API key for AI chat (optional)
-
-4. Push the database schema:
-   ```bash
-   npm run db:push
-   ```
-
-5. Seed the database with demo data (optional):
-   ```bash
-   npm run db:seed
-   ```
-
-6. Start the development server:
-   ```bash
-   npm run dev
-   ```
-
-7. Open [http://localhost:3000](http://localhost:3000) in your browser
-
-### Demo Credentials
-
-After running `npm run db:seed`, you can log in with:
-- **Email:** demo@FinPilot AI.app
-- **Password:** demo1234
-
----
-
-## 🛠️ Tech Stack
-
-- **Frontend:** Next.js 15 + React 19 + TypeScript
-- **UI:** Tailwind CSS + shadcn/ui
-- **Charts:** Recharts
-- **Backend:** Next.js API Routes + tRPC
-- **Database:** SQLite + Drizzle ORM
-- **Auth:** Better Auth
-- **AI:** Vercel AI SDK + Anthropic Claude Sonnet
-
----
-
-## 📖 Usage
-
-### Adding Transactions
-
-1. Navigate to **Transactions** → **New Transaction**
-2. Fill in the amount, date, description, account, and category
-3. Click **Create Transaction**
-
-### Importing from CSV
-
-1. Navigate to **Import**
-2. Upload your bank's CSV file
-3. Map the CSV columns to transaction fields
-4. Click **Import**
-
-### AI Chat
-
-Ask natural language questions like:
-- "How much did I spend on groceries last month?"
-- "What's my biggest expense category?"
-- "Show me my income vs expenses for the last 6 months"
-
----
-
-## 🐳 Docker Deployment
-
-A `docker-compose.yml` file is included for easy deployment:
+### 1) Install dependencies
 
 ```bash
-docker-compose up -d
+npm install
 ```
 
-This will start both PostgreSQL and the FinPilot AI app.
+### 2) Configure environment variables
 
----
-
-## 🧪 Testing
-
-Run tests:
 ```bash
-npm test
+cp .env.example .env.local
 ```
 
----
+Required values:
 
-## 📝 Development
-
-### Project Structure
-
-```
-FinPilot AI/
-├── app/                  # Next.js App Router pages
-│   ├── (app)/           # Protected app routes (dashboard, transactions, etc.)
-│   ├── (auth)/          # Auth pages (login, register)
-│   └── api/             # API routes (tRPC, chat)
-├── components/          # React components
-│   ├── ui/             # shadcn/ui components
-│   ├── charts/         # Chart components
-│   ├── chat/           # Chat components
-│   └── nav/            # Navigation components
-├── server/              # Backend code
-│   ├── db/             # Database schema and client
-│   ├── trpc/           # tRPC routers
-│   └── ai/             # AI tools and prompts
-├── lib/                 # Utility functions
-├── scripts/             # Seed and migration scripts
-└── docs/                # Documentation
+```bash
+DATABASE_URL=./data/finpilot.db
+BETTER_AUTH_SECRET=<generate-a-32-byte-secret>
+BETTER_AUTH_URL=http://localhost:3000
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+ANTHROPIC_API_KEY=sk-ant-...
 ```
 
-### Available Scripts
+### 3) Initialize the database
 
-- `npm run dev` — Start development server
-- `npm run build` — Build for production
-- `npm run start` — Start production server
-- `npm run db:push` — Push schema changes to database
-- `npm run db:seed` — Seed database with demo data
-- `npm run db:studio` — Open Drizzle Studio (database GUI)
-- `npm test` — Run tests
+```bash
+npm run db:push
+```
 
----
+### 4) Optional demo seed
 
-## 🤝 Contributing
+```bash
+npm run db:seed
+```
 
-Contributions are welcome! Please read [CONTRIBUTING.md](./CONTRIBUTING.md) before submitting a PR.
+### 5) Run the app
 
----
+```bash
+npm run dev
+```
 
-## 📄 License
-
-MIT © 2026 FinPilot AI
+Open http://localhost:3000
 
 ---
 
-## 🙏 Acknowledgments
+## Render deployment
 
-- Built with [Next.js](https://nextjs.org)
-- UI components from [shadcn/ui](https://ui.shadcn.com)
-- AI powered by [Anthropic Claude](https://anthropic.com)
-- Inspired by Mint, YNAB, and Copilot
+Create a Render PostgreSQL database and attach its Internal Database URL to the web service as `DATABASE_URL`. Do not upload `data/finpilot.db`; it is local development data and is ignored by Git.
+
+Build command:
+
+```text
+npm install && npm run build
+```
+
+Start command:
+
+```text
+npm start
+```
+
+Required Render environment variables:
+
+```text
+DATABASE_URL=<Render PostgreSQL Internal Database URL>
+BETTER_AUTH_SECRET=<long random production secret>
+BETTER_AUTH_URL=https://<your-service>.onrender.com
+NEXT_PUBLIC_APP_URL=https://<your-service>.onrender.com
+ANTHROPIC_API_KEY=<server-only Anthropic key>
+NODE_ENV=production
+```
+
+Before the first production start, run the safe migration command from a deployment shell with the production `DATABASE_URL`:
+
+```bash
+npm run db:migrate
+```
+
+The health check endpoint is `/api/health`. Provision the first admin through the application and promote the account using the protected admin workflow; no email address is hardcoded as an authorization rule.
+
+The existing Docker Compose file remains a local SQLite deployment option:
+
+```bash
+docker compose up --build -d
+```
+
+The container mounts the local `data/` directory to preserve the SQLite database between restarts.
 
 ---
 
-## 🔗 Links
+## Scripts
 
-- [Documentation](./docs/BUILD_PLAN.md)
-- [Issue Tracker](https://github.com/yourusername/FinPilot AI/issues)
-- [Live Demo](https://FinPilot AI-demo.vercel.app) *(coming soon)*
+- `npm run dev` — local development server
+- `npm run build` — production build
+- `npm run start` — production server
+- `npm run lint` — ESLint check
+- `npm run db:generate` — generate Drizzle migrations
+- `npm run db:migrate` — apply migrations for the dialect selected by `DATABASE_URL`
+- `npm run db:push` — quick schema sync for local development
+- `npm run db:seed` — seed demo data
+- `npm run db:studio` — inspect local SQLite database
 
 ---
 
-Made with ❤️ by developers, for developers.
+## Backup and restore
+
+Back up the SQLite file without shutting down the app if the database is idle, or stop the app before copying for a consistent snapshot:
+
+```bash
+cp ./data/finpilot.db ./data/finpilot-backup.db
+```
+
+Restore:
+
+```bash
+cp ./data/finpilot-backup.db ./data/finpilot.db
+```
+
+For containerized deployments, back up the mounted `data` directory or copy the db file from inside the container.
+
+---
+
+## Security notes
+
+- Secrets must be stored in environment variables and never committed.
+- The AI API key remains server-only; it is not exposed to the browser bundle.
+- User-scoped database queries are enforced by authenticated IDs and ownership checks.
+- Admin routes require an authenticated admin session.
+
+---
+
+## License
+
+MIT

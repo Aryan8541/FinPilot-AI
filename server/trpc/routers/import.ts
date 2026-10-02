@@ -4,6 +4,7 @@ import { router, protectedProcedure } from "../trpc";
 import { db } from "@/server/db";
 import { accounts, categories, transactions, importLogs } from "@/server/db/schema";
 import { parseCSV, mapRow } from "@/lib/csv-parser";
+import { logError } from "@/server/logger";
 import { and, eq } from "drizzle-orm";
 
 export const importRouter = router({
@@ -63,6 +64,13 @@ export const importRouter = router({
       }
 
       const result = parseCSV(input.csvText);
+      if (result.errors.length > 0) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: result.errors[0] ?? "CSV import failed validation.",
+        });
+      }
+
       const errors: string[] = [];
       let successCount = 0;
 
@@ -88,7 +96,8 @@ export const importRouter = router({
             isRecurring: false,
           });
           successCount++;
-        } catch {
+        } catch (error) {
+          logError("import.commit.insert", error);
           errors.push(`Row ${i + 1}: Failed to import transaction`);
         }
       }

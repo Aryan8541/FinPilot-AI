@@ -1,5 +1,8 @@
 import Papa from "papaparse";
 
+export const MAX_IMPORT_ROWS = 5000;
+export const MAX_IMPORT_BYTES = 1_000_000;
+
 export interface CSVRow {
   [key: string]: string;
 }
@@ -12,6 +15,15 @@ export interface CSVParseResult {
 
 export function parseCSV(csvText: string): CSVParseResult {
   const errors: string[] = [];
+  const sizeInBytes = Buffer.byteLength(csvText, "utf8");
+
+  if (sizeInBytes > MAX_IMPORT_BYTES) {
+    return {
+      data: [],
+      headers: [],
+      errors: [`CSV exceeds the ${MAX_IMPORT_BYTES.toLocaleString()} byte upload limit.`],
+    };
+  }
 
   const result = Papa.parse<CSVRow>(csvText, {
     header: true,
@@ -25,8 +37,12 @@ export function parseCSV(csvText: string): CSVParseResult {
     });
   }
 
+  if (result.data.length > MAX_IMPORT_ROWS) {
+    errors.push(`CSV exceeds the maximum ${MAX_IMPORT_ROWS.toLocaleString()} rows.`);
+  }
+
   return {
-    data: result.data,
+    data: result.data.slice(0, MAX_IMPORT_ROWS),
     headers: result.meta.fields || [],
     errors,
   };

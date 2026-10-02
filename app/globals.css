@@ -5,6 +5,8 @@
   --foreground: #17211f;
   --card: #ffffff;
   --card-foreground: #17211f;
+  --popover: #ffffff;
+  --popover-foreground: #17211f;
   --muted: #e9eeea;
   --muted-foreground: #64716d;
   --border: #d9e1dc;
@@ -27,6 +29,8 @@
   --font-mono: var(--font-geist-mono);
   --color-card: var(--card);
   --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
   --color-muted: var(--muted);
   --color-muted-foreground: var(--muted-foreground);
   --color-border: var(--border);
@@ -47,6 +51,8 @@
   --foreground: #edf5f0;
   --card: #172522;
   --card-foreground: #edf5f0;
+  --popover: #172522;
+  --popover-foreground: #edf5f0;
   --muted: #20322e;
   --muted-foreground: #a8bbb4;
   --border: #2c4540;

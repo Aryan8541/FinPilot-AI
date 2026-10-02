@@ -104,7 +104,7 @@ export const transactionsRouter = router({
         },
       });
       if (!transaction) {
-        throw new Error("Transaction not found");
+        throw new TRPCError({ code: "NOT_FOUND", message: "Transaction not found" });
       }
       return transaction;
     }),
@@ -163,7 +163,7 @@ export const transactionsRouter = router({
         });
 
         if (!existing) {
-          throw new Error("Transaction not found");
+          throw new TRPCError({ code: "NOT_FOUND", message: "Transaction not found" });
         }
 
         await assertOwnedReferences(
@@ -183,7 +183,7 @@ export const transactionsRouter = router({
         .where(and(eq(transactions.id, id), eq(transactions.userId, ctx.user.id)))
         .returning();
       if (!transaction) {
-        throw new Error("Transaction not found");
+        throw new TRPCError({ code: "NOT_FOUND", message: "Transaction not found" });
       }
       return transaction;
     }),
@@ -196,7 +196,7 @@ export const transactionsRouter = router({
         .where(and(eq(transactions.id, input.id), eq(transactions.userId, ctx.user.id)))
         .returning();
       if (!deleted) {
-        throw new Error("Transaction not found");
+        throw new TRPCError({ code: "NOT_FOUND", message: "Transaction not found" });
       }
       return { success: true };
     }),

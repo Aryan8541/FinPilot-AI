@@ -1,265 +1,127 @@
 # Deployment Guide
 
-This guide covers deploying FinPilot AI to production.
+This project currently uses SQLite/libSQL for local and containerized hosting. The active deployment model is a single-instance app with a persistent file-backed database, not PostgreSQL.
 
 ---
 
-## 🐳 Docker Deployment (Recommended)
+## Architecture
 
-The easiest way to deploy FinPilot AI is using Docker Compose.
+- Framework: Next.js 16
+- Database: SQLite via @libsql/client and Drizzle ORM
+- Auth: Better Auth
+- AI: Anthropic via the Vercel AI SDK
+- Deployment target: a Node process with persistent filesystem storage
 
-### Prerequisites
-
-- Docker 20.10+ and Docker Compose
-- A server with at least 2GB RAM
-
-### Steps
-
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/yourusername/FinPilot AI.git
-   cd FinPilot AI
-   ```
-
-2. Create a `.env` file:
-   ```bash
-   cp .env.example .env
-   ```
-
-3. Edit `.env` and set:
-   ```bash
-   DATABASE_URL="postgresql://FinPilot AI:FinPilot AI_prod_password@postgres:5432/FinPilot AI"
-   AUTH_SECRET="$(openssl rand -base64 32)"  # Generate a secure secret
-   AUTH_URL="https://your-domain.com"        # Your public URL
-   ANTHROPIC_API_KEY="sk-ant-..."           # Optional, for AI chat
-   ```
-
-4. Start the services:
-   ```bash
-   docker-compose up -d
-   ```
-
-5. Push the database schema:
-   ```bash
-   docker-compose exec app npm run db:push
-   ```
-
-6. (Optional) Seed with demo data:
-   ```bash
-   docker-compose exec app npm run db:seed
-   ```
-
-7. Access the app at `http://localhost:3000`
-
-### Updating
+The default database path is:
 
 ```bash
-git pull
-docker-compose build
-docker-compose up -d
+./data/finpilot.db
+```
+
+This is intentionally file-backed so the app can run in Docker or a VM with a mounted volume.
+
+---
+
+## Required environment variables
+
+Create a `.env.local` or `.env` file based on `.env.example`:
+
+```bash
+DATABASE_URL=./data/finpilot.db
+BETTER_AUTH_SECRET=<generate-a-strong-random-secret>
+BETTER_AUTH_URL=https://your-domain.com
+NEXT_PUBLIC_APP_URL=https://your-domain.com
+ANTHROPIC_API_KEY=sk-ant-...
+NODE_ENV=production
+```
+
+For local development, `http://localhost:3000` is fine.
+
+---
+
+## Docker deployment
+
+The included `docker-compose.yml` mounts a persistent `./data` directory for the SQLite database.
+
+```bash
+docker compose up --build -d
+```
+
+The app should run on port 3000 and the database stays on disk because of the volume mount.
+
+---
+
+## Bare metal deployment
+
+1. Install Node.js 20+
+2. Install dependencies: `npm install`
+3. Configure `.env.local`
+4. Run the schema sync: `npm run db:push`
+5. Start the app: `npm run start`
+
+Example:
+
+```bash
+npm install
+npm run build
+npm run db:push
+npm run start
 ```
 
 ---
 
-## 🚀 Vercel Deployment
+## Migrations and schema updates
 
-FinPilot AI can be deployed to Vercel with an external PostgreSQL database.
+Use Drizzle for schema changes:
 
-### Prerequisites
+```bash
+npm run db:generate
+npm run db:migrate
+```
 
-- Vercel account
-- PostgreSQL database (e.g., Neon, Supabase, or Railway)
-
-### Steps
-
-1. Fork the repository on GitHub
-
-2. Import the project to Vercel:
-   - Go to https://vercel.com/new
-   - Import your forked repository
-
-3. Configure environment variables in Vercel:
-   ```
-   DATABASE_URL=postgresql://user:password@host:5432/db
-   AUTH_SECRET=<generate-with-openssl-rand-base64-32>
-   AUTH_URL=https://your-app.vercel.app
-   ANTHROPIC_API_KEY=sk-ant-...  # Optional
-   ```
-
-4. Deploy!
-
-5. After first deploy, run migrations:
-   ```bash
-   npm run db:push
-   ```
+For local development and quick schema alignment, `npm run db:push` is also supported. Do not run destructive resets in production.
 
 ---
 
-## 🖥️ VPS / Bare Metal Deployment
+## Backup and restore
 
-### Prerequisites
+### SQLite backup
 
-- Ubuntu 22.04+ (or similar)
-- Node.js 20+
-- PostgreSQL 16+
-- Nginx (for reverse proxy)
-- PM2 (for process management)
+```bash
+cp ./data/finpilot.db ./data/finpilot-backup.db
+```
 
-### Steps
+### Restore
 
-1. Install dependencies:
-   ```bash
-   sudo apt update
-   sudo apt install -y nodejs npm postgresql nginx
-   npm install -g pm2
-   ```
+```bash
+cp ./data/finpilot-backup.db ./data/finpilot.db
+```
 
-2. Set up PostgreSQL:
-   ```bash
-   sudo -u postgres psql
-   CREATE DATABASE FinPilot AI;
-   CREATE USER FinPilot AI WITH PASSWORD 'your-password';
-   GRANT ALL PRIVILEGES ON DATABASE FinPilot AI TO FinPilot AI;
-   \q
-   ```
-
-3. Clone and build:
-   ```bash
-   git clone https://github.com/yourusername/FinPilot AI.git
-   cd FinPilot AI
-   npm install
-   npm run build
-   ```
-
-4. Create `.env`:
-   ```bash
-   DATABASE_URL="postgresql://FinPilot AI:your-password@localhost:5432/FinPilot AI"
-   AUTH_SECRET="$(openssl rand -base64 32)"
-   AUTH_URL="https://your-domain.com"
-   ANTHROPIC_API_KEY="sk-ant-..."
-   NODE_ENV=production
-   ```
-
-5. Run migrations:
-   ```bash
-   npm run db:push
-   ```
-
-6. Start with PM2:
-   ```bash
-   pm2 start npm --name FinPilot AI -- start
-   pm2 save
-   pm2 startup
-   ```
-
-7. Configure Nginx:
-   ```nginx
-   server {
-       listen 80;
-       server_name your-domain.com;
-
-       location / {
-           proxy_pass http://localhost:3000;
-           proxy_http_version 1.1;
-           proxy_set_header Upgrade $http_upgrade;
-           proxy_set_header Connection 'upgrade';
-           proxy_set_header Host $host;
-           proxy_cache_bypass $http_upgrade;
-       }
-   }
-   ```
-
-8. Enable the site and reload Nginx:
-   ```bash
-   sudo ln -s /etc/nginx/sites-available/FinPilot AI /etc/nginx/sites-enabled/
-   sudo systemctl reload nginx
-   ```
-
-9. Set up SSL with Let's Encrypt:
-   ```bash
-   sudo apt install certbot python3-certbot-nginx
-   sudo certbot --nginx -d your-domain.com
-   ```
+For a consistent snapshot, stop the app before copying the database file.
 
 ---
 
-## 🔒 Security Considerations
+## Security notes
 
-- **Always** change `AUTH_SECRET` in production
-- Use strong passwords for PostgreSQL
-- Enable HTTPS (SSL/TLS)
-- Keep dependencies updated: `npm audit fix`
-- Set up regular database backups
-- Restrict PostgreSQL to localhost or internal network
-- Use environment variables, never commit secrets
-- Consider adding rate limiting for the API
+- Keep `BETTER_AUTH_SECRET` in environment variables only.
+- Use HTTPS in production and set `BETTER_AUTH_URL` / `NEXT_PUBLIC_APP_URL` to the public domain.
+- Avoid exposing secrets in logs or client bundles.
+- Keep the `data/` directory on a persistent, backed-up volume.
+- If a deployment requires multi-node writes or very high concurrency, move to a managed database intentionally rather than silently changing the architecture.
 
 ---
 
-## 📊 Monitoring
+## Operational checks
 
-### Logs
-
-**Docker:**
-```bash
-docker-compose logs -f app
-```
-
-**PM2:**
-```bash
-pm2 logs FinPilot AI
-```
-
-### Database Backups
-
-**Docker:**
-```bash
-docker-compose exec postgres pg_dump -U FinPilot AI FinPilot AI > backup.sql
-```
-
-**Bare metal:**
-```bash
-pg_dump -U FinPilot AI FinPilot AI > backup.sql
-```
-
-### Restore from Backup
-
-**Docker:**
-```bash
-cat backup.sql | docker-compose exec -T postgres psql -U FinPilot AI FinPilot AI
-```
-
-**Bare metal:**
-```bash
-psql -U FinPilot AI FinPilot AI < backup.sql
-```
+- Health endpoint: `/api/health`
+- Admin health dashboard: `/admin/health`
+- AI configuration status is reported without exposing the API key.
 
 ---
 
-## 🐛 Troubleshooting
+## Troubleshooting
 
-### Database Connection Issues
-
-- Check `DATABASE_URL` is correct
-- Ensure PostgreSQL is running
-- Verify network connectivity
-
-### Build Failures
-
-- Clear `.next` folder: `rm -rf .next`
-- Clear `node_modules`: `rm -rf node_modules && npm install`
-- Check Node.js version: `node --version` (should be 20+)
-
-### Auth Issues
-
-- Regenerate `AUTH_SECRET`
-- Clear browser cookies
-- Verify `AUTH_URL` matches your domain
-
----
-
-## 📞 Support
-
-For deployment help:
-- Open an issue: https://github.com/yourusername/FinPilot AI/issues
-- Check docs: https://github.com/yourusername/FinPilot AI/tree/main/docs
+- Missing login/session issues: check `BETTER_AUTH_SECRET` and `BETTER_AUTH_URL`.
+- Database unreadable: verify `DATABASE_URL` points to a valid SQLite file or file path.
+- AI route failing: verify `ANTHROPIC_API_KEY` is set in the server environment.
+- Build failures: ensure the app is started with all required env vars and Node 20+.
