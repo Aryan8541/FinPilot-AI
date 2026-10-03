@@ -4,6 +4,8 @@ import { auth } from "@/server/auth";
 import Link from "next/link";
 import { ShieldCheck } from "lucide-react";
 
+export const dynamic = "force-dynamic";
+
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) redirect("/login");

@@ -3,6 +3,8 @@ import { headers } from "next/headers";
 import { auth } from "@/server/auth";
 import { Sidebar } from "@/components/nav/sidebar";
 
+export const dynamic = "force-dynamic";
+
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const session = await auth.api.getSession({ headers: await headers() });
 
