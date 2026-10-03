@@ -1,7 +1,7 @@
-import { anthropic } from "@ai-sdk/anthropic";
 import { convertToModelMessages, stepCountIs, streamText, tool, type ToolSet, type UIMessage } from "ai";
 import { auth } from "@/server/auth";
 import { tools } from "@/server/ai/tools";
+import { openrouterModel } from "@/server/ai/provider";
 import { systemPrompt } from "@/server/ai/system-prompt";
 import { logError } from "@/server/logger";
 
@@ -16,7 +16,7 @@ export async function POST(req: Request) {
     return new Response("Unauthorized", { status: 401 });
   }
 
-  if (!process.env.ANTHROPIC_API_KEY) {
+  if (!process.env.OPENROUTER_API_KEY) {
     return Response.json({ error: "AI is not configured." }, { status: 503 });
   }
 
@@ -40,7 +40,7 @@ export async function POST(req: Request) {
     }
 
     const result = streamText({
-      model: anthropic("claude-3-5-sonnet-20241022"),
+      model: openrouterModel,
       system: systemPrompt,
       messages: await convertToModelMessages(messages),
       tools: aiTools,

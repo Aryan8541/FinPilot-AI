@@ -11,12 +11,12 @@
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio",
     "db:push": "drizzle-kit push",
-    "db:seed": "tsx scripts/seed.ts"
+    "db:seed": "tsx scripts/seed.ts",
+    "db:check-auth": "tsx scripts/check-production-auth.ts"
   },
   "dependencies": {
-    "@ai-sdk/anthropic": "^3.0.78",
+    "@ai-sdk/openai": "^3.0.124",
     "@ai-sdk/react": "3.0.187",
-    "@anthropic-ai/sdk": "^0.97.1",
     "@hookform/resolvers": "^5.2.2",
     "@libsql/client": "^0.18.0",
     "@radix-ui/react-dialog": "^1.1.15",

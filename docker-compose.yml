@@ -10,7 +10,8 @@ services:
       DATABASE_URL: ./data/finpilot.db
       BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:-change-this-in-production}
       BETTER_AUTH_URL: ${BETTER_AUTH_URL:-http://localhost:3000}
-      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY}
+      OPENROUTER_MODEL: ${OPENROUTER_MODEL:-openrouter/free}
       NODE_ENV: production
     volumes:
       - ./data:/app/data

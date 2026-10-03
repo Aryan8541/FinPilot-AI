@@ -1,24 +1,24 @@
 # Deployment Guide
 
-This project currently uses SQLite/libSQL for local and containerized hosting. The active deployment model is a single-instance app with a persistent file-backed database, not PostgreSQL.
+This project uses SQLite/libSQL for local development and Docker Compose, and PostgreSQL for the Render production deployment.
 
 ---
 
 ## Architecture
 
 - Framework: Next.js 16
-- Database: SQLite via @libsql/client and Drizzle ORM
+- Database: SQLite locally and PostgreSQL in Render production via Drizzle ORM
 - Auth: Better Auth
-- AI: Anthropic via the Vercel AI SDK
+- AI: OpenRouter via the Vercel AI SDK
 - Deployment target: a Node process with persistent filesystem storage
 
-The default database path is:
+The local default database path is:
 
 ```bash
 ./data/finpilot.db
 ```
 
-This is intentionally file-backed so the app can run in Docker or a VM with a mounted volume.
+This is intentionally file-backed for local development and Docker Compose. Render production uses its PostgreSQL Internal Database URL instead.
 
 ---
 
@@ -31,7 +31,8 @@ DATABASE_URL=./data/finpilot.db
 BETTER_AUTH_SECRET=<generate-a-strong-random-secret>
 BETTER_AUTH_URL=https://your-domain.com
 NEXT_PUBLIC_APP_URL=https://your-domain.com
-ANTHROPIC_API_KEY=sk-ant-...
+OPENROUTER_API_KEY=<server-only OpenRouter key>
+OPENROUTER_MODEL=openrouter/free
 NODE_ENV=production
 ```
 
@@ -41,7 +42,7 @@ For local development, `http://localhost:3000` is fine.
 
 ## Docker deployment
 
-The included `docker-compose.yml` mounts a persistent `./data` directory for the SQLite database.
+The included `docker-compose.yml` mounts a persistent `./data` directory for the local SQLite database. Render production uses PostgreSQL and does not use this file.
 
 ```bash
 docker compose up --build -d
@@ -56,7 +57,7 @@ The app should run on port 3000 and the database stays on disk because of the vo
 1. Install Node.js 20+
 2. Install dependencies: `npm install`
 3. Configure `.env.local`
-4. Run the schema sync: `npm run db:push`
+4. Run the schema sync: `npm run db:push` for local SQLite, or `npm run db:migrate` for PostgreSQL production
 5. Start the app: `npm run start`
 
 Example:
@@ -122,6 +123,6 @@ For a consistent snapshot, stop the app before copying the database file.
 ## Troubleshooting
 
 - Missing login/session issues: check `BETTER_AUTH_SECRET` and `BETTER_AUTH_URL`.
-- Database unreadable: verify `DATABASE_URL` points to a valid SQLite file or file path.
-- AI route failing: verify `ANTHROPIC_API_KEY` is set in the server environment.
+- Database unreadable: verify local `DATABASE_URL` points to a valid SQLite file, or that production uses the Render PostgreSQL URL.
+- AI route failing: verify `OPENROUTER_API_KEY` is set in the server environment and `OPENROUTER_MODEL` is valid.
 - Build failures: ensure the app is started with all required env vars and Node 20+.

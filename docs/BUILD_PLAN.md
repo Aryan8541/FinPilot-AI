@@ -59,7 +59,7 @@ Target audience: developers, indie hackers, and privacy-conscious users who want
 - **Database:** PostgreSQL — robust, free, supports the analytical queries the dashboard and chat need.
 - **ORM:** Drizzle ORM — type-safe, lightweight, plays well with Postgres and TypeScript.
 - **Auth:** Better Auth — modern, self-hostable, no external dependency, supports email/password out of the box.
-- **AI:** Vercel AI SDK + Anthropic Claude (Sonnet for chat) — streaming responses, tool calling for structured data queries, easy provider swap if needed.
+- **AI:** Vercel AI SDK + OpenRouter — streaming responses and tool calling for structured data queries.
 - **Hosting/Infra:** Docker + docker-compose — one command to self-host. Optional Vercel deploy for the demo instance.
 - **Testing:** Vitest — unit + integration tests on critical paths (auth, CSV import, AI tool calls).
 - **Other:**
@@ -78,7 +78,7 @@ FinPilot AI is a single Next.js application with three main subsystems:
 
 **2. API layer (tRPC).** All data operations — CRUD for transactions, categories, accounts; CSV import processing; analytics queries for the dashboard — go through tRPC routers. This gives the frontend full type safety and gives external consumers a clean REST-equivalent layer (we expose tRPC routes as HTTP endpoints for the public API).
 
-**3. AI subsystem.** The chat UI sends user messages to a streaming endpoint that wraps Claude Sonnet. The model has access to a set of **tools** — typed functions that query the user's data (`getTransactions`, `getSpendingByCategory`, `getMonthlyTrend`, etc.). The model decides which tools to call, receives structured results, and synthesizes a response. When the result is best visualized, the model returns a chart spec that the frontend renders inline with Recharts.
+**3. AI subsystem.** The chat UI sends user messages to a streaming endpoint that wraps OpenRouter. The model has access to a set of **tools** — typed functions that query the user's data (`getTransactions`, `getSpendingByCategory`, `getMonthlyTrend`, etc.). The model decides which tools to call, receives structured results, and synthesizes a response. When the result is best visualized, the model returns a chart spec that the frontend renders inline with Recharts.
 
 **Data flow for a user adding a transaction:**
 1. User submits form on `/transactions/new`
@@ -89,13 +89,13 @@ FinPilot AI is a single Next.js application with three main subsystems:
 **Data flow for an AI chat query:**
 1. User types "how much did I spend on groceries last month?"
 2. Frontend POSTs to `/api/chat` with message history
-3. Server initializes Claude streaming session with available tools
-4. Claude calls `getSpendingByCategory({ category: "groceries", month: "2025-11" })`
+3. Server initializes an OpenRouter streaming session with available tools
+4. OpenRouter calls `getSpendingByCategory({ category: "groceries", month: "2025-11" })`
 5. Tool handler runs Drizzle query, returns `{ total: 487.23, transactionCount: 23 }`
-6. Claude streams natural language response back to client
-7. If chart is appropriate, Claude returns a structured `chartSpec` that the frontend renders below the message
+6. OpenRouter streams natural language response back to client
+7. If chart is appropriate, OpenRouter returns a structured `chartSpec` that the frontend renders below the message
 
-**External services:** Anthropic API only. No Plaid/Teller in MVP — all data is manual or CSV-imported.
+**External services:** OpenRouter API only. No Plaid/Teller in MVP — all data is manual or CSV-imported.
 
 ---
 
@@ -190,7 +190,7 @@ FinPilot AI/
 │ │ │ ├── import.ts
 │ │ │ └── chat.ts
 │ │ ├── ai/
-│ │ │ ├── tools.ts # tool definitions for Claude
+│ │ │ ├── tools.ts # tool definitions for OpenRouter
 │ │ │ ├── system-prompt.ts
 │ │ │ └── chart-spec.ts
 │ │ └── auth.ts # Better Auth config
@@ -249,7 +249,7 @@ FinPilot AI/
 ### Phase 5 — AI Chat (4–5 days)
 - Define AI tools: `getTransactions`, `getSpendingByCategory`, `getMonthlyTrend`, `getAccountBalances`, `searchTransactions`, `getRecurringTransactions`
 - System prompt with financial context and chart-spec instructions
-- Streaming `/api/chat` endpoint using Vercel AI SDK + Anthropic
+- Streaming `/api/chat` endpoint using Vercel AI SDK + OpenRouter
 - Chat UI with message history, streaming text, tool-call indicators
 - Inline chart rendering when model returns `chartSpec`
 - Persist sessions to DB
@@ -333,7 +333,7 @@ All endpoints exposed via tRPC at `/api/trpc/*`. AI chat at `/api/chat`. Auth at
 
 **Drizzle over Prisma.** Lighter, faster, fewer build-time surprises, and the SQL-like API makes the analytical queries (which are core to this app) more natural to write. Prisma's generated client is heavier than this project needs.
 
-**Claude tool calling over RAG or text-to-SQL.** RAG doesn't fit — financial data isn't documents. Text-to-SQL works but exposes a footgun (model writes bad SQL, queries fail or worse). Defining a fixed set of typed tools constrains the model to safe, audited query paths and gives much more predictable results. This is the same pattern used in the SPP MCP Server work.
+**OpenRouter tool calling over RAG or text-to-SQL.** RAG doesn't fit — financial data isn't documents. Text-to-SQL works but exposes a footgun (model writes bad SQL, queries fail or worse). Defining a fixed set of typed tools constrains the model to safe, audited query paths and gives much more predictable results. This is the same pattern used in the SPP MCP Server work.
 
 **Manual entry + CSV over Plaid integration.** Plaid requires US-only data, vendor approval, and ongoing API costs. For MVP and as a portfolio piece, manual + CSV import covers the demo case and works internationally. Plaid is the obvious post-MVP add.
 
@@ -341,7 +341,7 @@ All endpoints exposed via tRPC at `/api/trpc/*`. AI chat at `/api/chat`. Auth at
 
 ## 11. Risks & Open Questions
 
-- **AI cost on demo instance.** If the live demo gets traffic, Anthropic API costs accumulate. Mitigation: rate-limit chat endpoint by IP, cap tokens per response, consider a "bring your own API key" mode for the demo.
+- **AI cost on demo instance.** If the live demo gets traffic, OpenRouter usage costs can accumulate. Mitigation: rate-limit chat endpoint by IP, cap tokens per response, consider a "bring your own API key" mode for the demo.
 - **CSV format chaos.** Bank CSVs vary wildly. The column-mapping UI handles this, but edge cases (multi-line descriptions, weird date formats, currency symbols in amount fields) will appear. Plan to iterate on the parser based on real CSVs.
 - **Recurring detection is heuristic.** Won't be perfect. Acceptable for MVP — surface detected ones as suggestions the user can confirm/reject, don't auto-flag without review.
 - **Single-tenant vs. multi-tenant decision.** Plan assumes multi-user from the start (each user's data isolated by `userId`). This is more useful for self-hosting in households and adds negligible complexity. Confirmed.
@@ -378,7 +378,7 @@ All endpoints exposed via tRPC at `/api/trpc/*`. AI chat at `/api/chat`. Auth at
 - [ ] Build import log / error review screen
 - [ ] Define AI tools in `server/ai/tools.ts` with Zod schemas
 - [ ] Write system prompt covering tool usage and chart-spec format
-- [ ] Implement `/api/chat` streaming endpoint with Vercel AI SDK + Anthropic
+- [ ] Implement `/api/chat` streaming endpoint with Vercel AI SDK + OpenRouter
 - [ ] Build chat UI with streaming, message history, tool-call indicators
 - [ ] Build inline chart rendering from chartSpec
 - [ ] Persist chat sessions and messages to DB

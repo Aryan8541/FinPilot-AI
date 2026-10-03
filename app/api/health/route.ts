@@ -32,7 +32,11 @@ export async function GET() {
       application: "ok",
       database: databaseStatus,
       authentication: authenticationStatus,
-      ai: process.env.ANTHROPIC_API_KEY ? "configured" : "not-configured",
+      ai: {
+        provider: "OpenRouter",
+        model: process.env.OPENROUTER_MODEL || "openrouter/free",
+        configured: Boolean(process.env.OPENROUTER_API_KEY),
+      },
     },
   });
 }

@@ -44,7 +44,7 @@ FinPilot AI is a **fully functional, production-ready personal finance tracker**
      - Account balances
      - Search transactions
      - Recurring expenses
-   - Streaming responses via Claude Sonnet
+   - Streaming responses via OpenRouter
 
 6. **Polish & UX**
    - Dark mode (system/light/dark)
@@ -70,7 +70,7 @@ FinPilot AI is a **fully functional, production-ready personal finance tracker**
 | **Database** | PostgreSQL + Drizzle ORM |
 | **API** | tRPC (type-safe end-to-end) |
 | **Auth** | Better Auth |
-| **AI** | Vercel AI SDK + Anthropic Claude Sonnet |
+| **AI** | Vercel AI SDK + OpenRouter |
 | **Charts** | Recharts |
 | **Deployment** | Docker + docker-compose |
 

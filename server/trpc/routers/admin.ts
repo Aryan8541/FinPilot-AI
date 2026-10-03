@@ -51,13 +51,13 @@ export const adminRouter = router({
 
   usage: adminProcedure.query(async () => {
     const [messages, imports] = await Promise.all([db.select({ value: count() }).from(chatMessages), db.select({ value: count() }).from(importLogs)]);
-    return { aiMessages: messages[0]?.value ?? 0, importRuns: imports[0]?.value ?? 0, costTracking: "not configured" as const, apiConfigured: Boolean(process.env.ANTHROPIC_API_KEY) };
+    return { aiMessages: messages[0]?.value ?? 0, importRuns: imports[0]?.value ?? 0, costTracking: "not configured" as const, apiConfigured: Boolean(process.env.OPENROUTER_API_KEY) };
   }),
 
   health: adminProcedure.query(async () => ({
     database: "connected" as const,
     authentication: "available" as const,
-    ai: process.env.ANTHROPIC_API_KEY ? "configured" as const : "not configured" as const,
+    ai: process.env.OPENROUTER_API_KEY ? "configured" as const : "not configured" as const,
     imports: "available" as const,
     application: "healthy" as const,
   })),
